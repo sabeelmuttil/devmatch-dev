@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { ShareCard } from "@/components/ShareCard";
 
 export interface MatchProfile {
   id: string;
@@ -425,35 +426,59 @@ export function ResultsView({
             )}
           </div>
 
-          <div className="glow-border-cyan lg:col-span-2 flex flex-col rounded-2xl bg-gradient-to-br from-violet-950/80 via-[#0f0f16] to-cyan-950/40 p-6 sm:p-8">
-            <p className="text-xs font-medium uppercase tracking-wider text-cyan-400/80">
-              Developer Persona
-            </p>
-            <div className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
-              <div className="animate-float relative">
-                <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-2xl" />
-                <div className="relative rounded-2xl border border-violet-400/40 bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-6 py-5 shadow-lg shadow-violet-500/20">
-                  <span className="text-2xl font-bold text-gradient sm:text-3xl">
-                    {techPersonality.title}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-6 text-sm leading-relaxed text-zinc-400">
-                {techPersonality.description}
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            <div className="glow-border-cyan flex flex-col rounded-2xl bg-gradient-to-br from-violet-950/80 via-[#0f0f16] to-cyan-950/40 p-6 sm:p-8">
+              <p className="text-xs font-medium uppercase tracking-wider text-cyan-400/80">
+                Developer Persona
               </p>
-            </div>
-            {tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap justify-center gap-1.5">
-                {tags.slice(0, 6).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+              <div className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
+                <div className="animate-float relative">
+                  <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-2xl" />
+                  <div className="relative rounded-2xl border border-violet-400/40 bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-6 py-5 shadow-lg shadow-violet-500/20">
+                    <span className="text-2xl font-bold text-gradient sm:text-3xl">
+                      {techPersonality.title}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-6 text-sm leading-relaxed text-zinc-400">
+                  {techPersonality.description}
+                </p>
               </div>
-            )}
+              {tags.length > 0 && (
+                <div className="mt-6 flex flex-wrap justify-center gap-1.5">
+                  {tags.slice(0, 6).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 p-5 backdrop-blur-sm sm:p-6">
+              <p className="mb-4 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Share your Tech Identity
+              </p>
+              <ShareCard
+                name={profile.name ?? profile.username ?? "Developer"}
+                avatar={
+                  profile.image ??
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(profile.username ?? "dev")}`
+                }
+                persona={techPersonality.title}
+                skills={
+                  stack.length >= 3
+                    ? stack.slice(0, 3).map((s) => s.title)
+                    : [
+                        ...stack.map((s) => s.title),
+                        ...dnaEntries.map(([label]) => label),
+                      ].slice(0, 3)
+                }
+              />
+            </div>
           </div>
         </div>
 
