@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { renderShareCardImage } from "@/lib/share-card-og";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 

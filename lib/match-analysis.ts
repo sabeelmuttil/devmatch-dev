@@ -129,7 +129,10 @@ ${tagLines.length > 0 ? tagLines.join("\n") : "- (none)"}`;
 
 function parsePersona(raw: string): PersonaAnalysis {
   let parsed: unknown;
-  const trimmed = raw.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+  const trimmed = raw
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/```\s*$/, "");
 
   try {
     parsed = JSON.parse(trimmed);
@@ -204,9 +207,7 @@ const TAG_TO_DNA: Record<string, string> = {
 };
 
 function inferDnaCategory(tagOrTech: string): string {
-  const slug = tagOrTech
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+  const slug = tagOrTech.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (TAG_TO_DNA[slug]) return TAG_TO_DNA[slug];
   if (slug.includes("flutter") || slug.includes("mobile")) return "Mobile";
   if (slug.includes("react") || slug.includes("front")) return "Frontend";
@@ -256,7 +257,12 @@ export function buildFallbackPersona(
     techPersonality: {
       title: `${label} Explorer`,
       techDna,
-      description: `${profile.name ?? profile.username ?? "This dev"} is deep in the daily.dev ${readTags.slice(0, 3).map((t) => `#${t.name}`).join(", ") || "community"} — a builder who follows the pulse of the ecosystem.`,
+      description: `${profile.name ?? profile.username ?? "This dev"} is deep in the daily.dev ${
+        readTags
+          .slice(0, 3)
+          .map((t) => `#${t.name}`)
+          .join(", ") || "community"
+      } — a builder who follows the pulse of the ecosystem.`,
     },
   };
 }

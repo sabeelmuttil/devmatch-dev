@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import {
   captureCardBlob,
@@ -10,8 +9,9 @@ import {
   type TopMatchEntry,
 } from "@/lib/export-card-image";
 import { buildPublicShareImageUrl } from "@/lib/publish-share-card";
-import { copyPngToClipboard } from "@/lib/share-clipboard";
 import { buildXIntentUrl, buildXTweetText } from "@/lib/share-card-text";
+import { copyPngToClipboard } from "@/lib/share-clipboard";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export interface ShareCardProps {
   name: string;
@@ -45,18 +45,30 @@ const DNA_BAR_COLORS = [
   "from-rose-400 to-red-500",
 ];
 
-function normalizeSkills(skills: ShareCardProps["skills"]): [string, string, string] {
+function normalizeSkills(
+  skills: ShareCardProps["skills"],
+): [string, string, string] {
   const padded = [...skills, "—", "—", "—"].slice(0, 3);
   return [padded[0], padded[1], padded[2]];
 }
 
 function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "dev";
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "dev"
+  );
 }
 
 function XIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   );
@@ -64,8 +76,19 @@ function XIcon({ className }: { className?: string }) {
 
 function DownloadIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+      />
     </svg>
   );
 }
@@ -87,7 +110,6 @@ export function ShareCard({
   const [exporting, setExporting] = useState<"png" | "jpeg" | "x" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
-  const [publicImageUrl, setPublicImageUrl] = useState<string | null>(null);
 
   const topSkills = normalizeSkills(skills);
   const shareAppUrl =
@@ -95,19 +117,13 @@ export function ShareCard({
     (typeof window !== "undefined" ? window.location.origin : DEFAULT_APP_URL);
   const handle = username ? `@${username}` : null;
   const dnaBars = useMemo(() => techDna.slice(0, 6), [techDna]);
-  const displayTags = useMemo(
-    () => tags.filter(Boolean).slice(0, 6),
-    [tags],
-  );
+  const displayTags = useMemo(() => tags.filter(Boolean).slice(0, 6), [tags]);
 
   const techDnaKey = techDna
     .slice(0, 6)
     .map((d) => `${d.label}:${d.value}`)
     .join("|");
-  const tagsKey = tags
-    .filter(Boolean)
-    .slice(0, 6)
-    .join("|");
+  const tagsKey = tags.filter(Boolean).slice(0, 6).join("|");
 
   const serverPayload = useMemo<ShareCardPayload>(
     () => ({
@@ -139,47 +155,15 @@ export function ShareCard({
     ],
   );
 
-  const shareUrlKey = useMemo(
-    () =>
-      [
-        name,
-        username,
-        avatar,
-        persona,
-        personaDescription,
-        topSkills.join("|"),
-        techDnaKey,
-        tagsKey,
-        topMatch?.username ?? "",
-        String(topMatch?.matchScore ?? ""),
-        topMatch?.matchReason ?? "",
-      ].join("\n"),
-    [
-      name,
-      username,
-      avatar,
-      persona,
-      personaDescription,
-      topSkills,
-      techDnaKey,
-      tagsKey,
-      topMatch?.username,
-      topMatch?.matchScore,
-      topMatch?.matchReason,
-    ],
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const publicImageUrl = useMemo(() => {
+    if (typeof window === "undefined") return null;
     try {
-      setPublicImageUrl(
-        buildPublicShareImageUrl(serverPayload, window.location.origin),
-      );
+      return buildPublicShareImageUrl(serverPayload, window.location.origin);
     } catch (err) {
       console.warn("[ShareCard] share URL build failed:", err);
-      setPublicImageUrl(null);
+      return null;
     }
-  }, [shareUrlKey, serverPayload]);
+  }, [serverPayload]);
 
   const tweetInput = useMemo(
     () => ({
@@ -260,7 +244,9 @@ export function ShareCard({
         );
       } catch (err) {
         console.error("[ShareCard] share prep failed:", err);
-        setShareHint("X is open. Card image copy failed — use the image link in your tweet.");
+        setShareHint(
+          "X is open. Card image copy failed — use the image link in your tweet.",
+        );
       } finally {
         setExporting(null);
       }
@@ -280,7 +266,10 @@ export function ShareCard({
         const blob = await captureCardBlob(node, format, serverPayload, {
           preferClient: true,
         });
-        downloadBlob(blob, `tech-identity-${slugify(username ?? name)}.${format}`);
+        downloadBlob(
+          blob,
+          `tech-identity-${slugify(username ?? name)}.${format}`,
+        );
       } catch (err) {
         console.error("[ShareCard] export failed:", err);
         setExportError(
@@ -307,8 +296,14 @@ export function ShareCard({
 
         <div className="relative overflow-hidden rounded-[18px]">
           <div className="absolute inset-0 bg-[#08080f]" />
-          <div data-export-hide="true" className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-violet-600/35 blur-3xl" />
-          <div data-export-hide="true" className="pointer-events-none absolute -right-12 bottom-0 h-56 w-56 rounded-full bg-cyan-500/25 blur-3xl" />
+          <div
+            data-export-hide="true"
+            className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-violet-600/35 blur-3xl"
+          />
+          <div
+            data-export-hide="true"
+            className="pointer-events-none absolute -right-12 bottom-0 h-56 w-56 rounded-full bg-cyan-500/25 blur-3xl"
+          />
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.04]"
             style={{
@@ -350,11 +345,17 @@ export function ShareCard({
                 />
               </div>
               <div className="min-w-0 flex-1 pt-1">
-                <p className="text-base font-bold leading-tight text-white">{name}</p>
+                <p className="text-base font-bold leading-tight text-white">
+                  {name}
+                </p>
                 {handle && (
-                  <p className="mt-0.5 font-mono text-xs text-cyan-400/90">{handle}</p>
+                  <p className="mt-0.5 font-mono text-xs text-cyan-400/90">
+                    {handle}
+                  </p>
                 )}
-                <p className="mt-1 text-[11px] text-zinc-500">daily.dev developer</p>
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  daily.dev developer
+                </p>
               </div>
             </div>
 
@@ -365,7 +366,8 @@ export function ShareCard({
               <p
                 className="mt-1.5 text-lg font-bold leading-tight"
                 style={{
-                  background: "linear-gradient(135deg, #c4b5fd 0%, #67e8f9 50%, #f9a8d4 100%)",
+                  background:
+                    "linear-gradient(135deg, #c4b5fd 0%, #67e8f9 50%, #f9a8d4 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",
@@ -398,7 +400,9 @@ export function ShareCard({
                     <div className="h-2 overflow-hidden rounded-full bg-zinc-800/80">
                       <div
                         className={`h-full rounded-full bg-gradient-to-r ${DNA_BAR_COLORS[i % DNA_BAR_COLORS.length]}`}
-                        style={{ width: `${Math.min(100, Math.max(0, entry.value))}%` }}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, entry.value))}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -417,7 +421,9 @@ export function ShareCard({
                   key={`skill-${i}-${skill}`}
                   className={`rounded-xl border bg-gradient-to-b px-2 py-2.5 text-center ${SKILL_ACCENTS[i % SKILL_ACCENTS.length]}`}
                 >
-                  <p className="text-[11px] font-semibold leading-tight">{skill}</p>
+                  <p className="text-[11px] font-semibold leading-tight">
+                    {skill}
+                  </p>
                 </div>
               ))}
             </div>
@@ -497,10 +503,14 @@ export function ShareCard({
       </div>
 
       {exportError && (
-        <p className="max-w-[360px] text-center text-xs text-red-300">{exportError}</p>
+        <p className="max-w-[360px] text-center text-xs text-red-300">
+          {exportError}
+        </p>
       )}
       {shareHint && !exportError && (
-        <p className="max-w-[360px] text-center text-xs text-cyan-300/90">{shareHint}</p>
+        <p className="max-w-[360px] text-center text-xs text-cyan-300/90">
+          {shareHint}
+        </p>
       )}
 
       <div className="flex w-full max-w-[360px] flex-col gap-2">
@@ -540,8 +550,8 @@ export function ShareCard({
         </div>
 
         <p className="text-center text-[10px] leading-relaxed text-zinc-600">
-          Opens X right away with your post and card image link. The PNG is copied in
-          the background so you can paste it into the composer.
+          Opens X right away with your post and card image link. The PNG is
+          copied in the background so you can paste it into the composer.
         </p>
       </div>
     </div>

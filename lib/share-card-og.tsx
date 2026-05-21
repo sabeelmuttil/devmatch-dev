@@ -1,8 +1,10 @@
-import { ImageResponse } from "next/og";
 import { avatarFallbackUrl } from "@/lib/avatar";
 import type { ShareCardPayload } from "@/lib/export-card-image";
+import { ImageResponse } from "next/og";
 
-function normalizeSkills(skills: string[] | undefined): [string, string, string] {
+function normalizeSkills(
+  skills: string[] | undefined,
+): [string, string, string] {
   const list = (skills ?? []).filter(Boolean).slice(0, 3);
   while (list.length < 3) list.push("—");
   return [list[0], list[1], list[2]];
@@ -13,7 +15,14 @@ const flex = (extra: Record<string, string | number> = {}) => ({
   ...extra,
 });
 
-const DNA_FILL = ["#8b5cf6", "#22d3ee", "#d946ef", "#10b981", "#f59e0b", "#f43f5e"];
+const DNA_FILL = [
+  "#8b5cf6",
+  "#22d3ee",
+  "#d946ef",
+  "#10b981",
+  "#f59e0b",
+  "#f43f5e",
+];
 
 type DnaEntry = { label: string; value: number };
 type TopMatchEntry = NonNullable<ShareCardPayload["topMatch"]>;
@@ -44,9 +53,21 @@ function buildShareCardElement({
   topMatch,
 }: CardElementProps) {
   const skillColors = [
-    { bg: "rgba(139,92,246,0.25)", border: "rgba(167,139,250,0.5)", text: "#ddd6fe" },
-    { bg: "rgba(34,211,238,0.2)", border: "rgba(34,211,238,0.45)", text: "#a5f3fc" },
-    { bg: "rgba(217,70,239,0.2)", border: "rgba(232,121,249,0.45)", text: "#f5d0fe" },
+    {
+      bg: "rgba(139,92,246,0.25)",
+      border: "rgba(167,139,250,0.5)",
+      text: "#ddd6fe",
+    },
+    {
+      bg: "rgba(34,211,238,0.2)",
+      border: "rgba(34,211,238,0.45)",
+      text: "#a5f3fc",
+    },
+    {
+      bg: "rgba(217,70,239,0.2)",
+      border: "rgba(232,121,249,0.45)",
+      text: "#f5d0fe",
+    },
   ];
 
   return (
@@ -95,10 +116,14 @@ function buildShareCardElement({
               DD
             </div>
             <div style={flex({ flexDirection: "column" })}>
-              <div style={flex({ fontSize: 12, fontWeight: 700, color: "white" })}>
+              <div
+                style={flex({ fontSize: 12, fontWeight: 700, color: "white" })}
+              >
                 DAILYDEVMATCH.DEV
               </div>
-              <div style={flex({ fontSize: 10, color: "#71717a", marginTop: 2 })}>
+              <div
+                style={flex({ fontSize: 10, color: "#71717a", marginTop: 2 })}
+              >
                 Tech Identity Card
               </div>
             </div>
@@ -118,8 +143,20 @@ function buildShareCardElement({
           </div>
         </div>
 
-        <div style={flex({ padding: "24px 28px 12px", gap: 20, alignItems: "flex-start" })}>
-          <div style={flex({ padding: 3, borderRadius: 16, background: "#7c3aed" })}>
+        <div
+          style={flex({
+            padding: "24px 28px 12px",
+            gap: 20,
+            alignItems: "flex-start",
+          })}
+        >
+          <div
+            style={flex({
+              padding: 3,
+              borderRadius: 16,
+              background: "#7c3aed",
+            })}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatar}
@@ -130,8 +167,14 @@ function buildShareCardElement({
             />
           </div>
           <div style={flex({ flexDirection: "column", flex: 1 })}>
-            <div style={flex({ fontSize: 24, fontWeight: 700, color: "white" })}>{name}</div>
-            <div style={flex({ fontSize: 13, color: "#22d3ee", marginTop: 4 })}>{handle}</div>
+            <div
+              style={flex({ fontSize: 24, fontWeight: 700, color: "white" })}
+            >
+              {name}
+            </div>
+            <div style={flex({ fontSize: 13, color: "#22d3ee", marginTop: 4 })}>
+              {handle}
+            </div>
             <div style={flex({ fontSize: 11, color: "#71717a", marginTop: 4 })}>
               daily.dev developer
             </div>
@@ -205,8 +248,13 @@ function buildShareCardElement({
             TECH DNA
           </div>
           {techDna.slice(0, 6).map((entry, i) => (
-            <div key={`dna-${i}`} style={flex({ flexDirection: "column", gap: 4 })}>
-              <div style={flex({ justifyContent: "space-between", fontSize: 11 })}>
+            <div
+              key={`dna-${i}`}
+              style={flex({ flexDirection: "column", gap: 4 })}
+            >
+              <div
+                style={flex({ justifyContent: "space-between", fontSize: 11 })}
+              >
                 <div style={flex({ color: "#d4d4d8" })}>{entry.label}</div>
                 <div style={flex({ color: "#22d3ee", fontWeight: 600 })}>
                   {entry.value}%
@@ -235,7 +283,9 @@ function buildShareCardElement({
           ))}
         </div>
 
-        <div style={flex({ flexDirection: "column", padding: "8px 28px 12px" })}>
+        <div
+          style={flex({ flexDirection: "column", padding: "8px 28px 12px" })}
+        >
           <div
             style={flex({
               fontSize: 9,
@@ -331,12 +381,25 @@ function buildShareCardElement({
             >
               TOP MATCH
             </div>
-            <div style={flex({ justifyContent: "space-between", alignItems: "center" })}>
+            <div
+              style={flex({
+                justifyContent: "space-between",
+                alignItems: "center",
+              })}
+            >
               <div style={flex({ flexDirection: "column" })}>
-                <div style={flex({ fontSize: 14, fontWeight: 700, color: "white" })}>
+                <div
+                  style={flex({
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "white",
+                  })}
+                >
                   {topMatch.name}
                 </div>
-                <div style={flex({ fontSize: 10, color: "#71717a", marginTop: 2 })}>
+                <div
+                  style={flex({ fontSize: 10, color: "#71717a", marginTop: 2 })}
+                >
                   @{topMatch.username}
                 </div>
               </div>
@@ -353,7 +416,9 @@ function buildShareCardElement({
                 {topMatch.matchScore}%
               </div>
             </div>
-            <div style={flex({ fontSize: 10, color: "#a1a1aa", lineHeight: 1.4 })}>
+            <div
+              style={flex({ fontSize: 10, color: "#a1a1aa", lineHeight: 1.4 })}
+            >
               {topMatch.matchReason.length > 100
                 ? `${topMatch.matchReason.slice(0, 100)}…`
                 : topMatch.matchReason}
@@ -372,7 +437,9 @@ function buildShareCardElement({
           })}
         >
           <div style={flex({ flexDirection: "column" })}>
-            <div style={flex({ fontSize: 9, color: "#52525b" })}>{`ID · ${id}`}</div>
+            <div
+              style={flex({ fontSize: 9, color: "#52525b" })}
+            >{`ID · ${id}`}</div>
             <div style={flex({ fontSize: 10, color: "#71717a", marginTop: 3 })}>
               #dailydevhackathon
             </div>

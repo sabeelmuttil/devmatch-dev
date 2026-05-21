@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { Avatar } from "@/components/Avatar";
 import { ShareCard } from "@/components/ShareCard";
+import * as React from "react";
 
 export interface MatchProfile {
   id: string;
@@ -246,7 +246,10 @@ export function LoadingView({ step }: { step: number }) {
                   className={`transition-opacity duration-500 ${
                     i === codeIndex ? "text-cyan-300" : "text-zinc-600"
                   }`}
-                  style={{ animation: i === codeIndex ? "typing 1s ease infinite" : undefined }}
+                  style={{
+                    animation:
+                      i === codeIndex ? "typing 1s ease infinite" : undefined,
+                  }}
                 >
                   <span className="text-violet-500/80 mr-2 select-none">
                     {String(i + 1).padStart(2, "0")}
@@ -345,8 +348,14 @@ export function ResultsView({
   data: MatchResult;
   onReset: () => void;
 }) {
-  const { profile, techPersonality, perfectMatches, tags, stack, personaSource } =
-    data;
+  const {
+    profile,
+    techPersonality,
+    perfectMatches,
+    tags,
+    stack,
+    personaSource,
+  } = data;
   const dnaEntries = Object.entries(techPersonality.techDna).sort(
     ([, a], [, b]) => b - a,
   );
@@ -489,16 +498,18 @@ export function ResultsView({
                       }
                     : undefined
                 }
-                skills={[
-                  ...new Set(
-                    stack.length >= 3
-                      ? stack.map((s) => s.title)
-                      : [
-                          ...stack.map((s) => s.title),
-                          ...dnaEntries.map(([label]) => label),
-                        ],
-                  ),
-                ].slice(0, 3) as [string, string, string] | string[]}
+                skills={
+                  [
+                    ...new Set(
+                      stack.length >= 3
+                        ? stack.map((s) => s.title)
+                        : [
+                            ...stack.map((s) => s.title),
+                            ...dnaEntries.map(([label]) => label),
+                          ],
+                    ),
+                  ].slice(0, 3) as [string, string, string] | string[]
+                }
               />
             </div>
           </div>

@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   DailyDevApiError,
   executeDailyDevGraphQL,
@@ -10,6 +9,7 @@ import {
   analyzeDeveloperPersona,
   buildFallbackPersona,
 } from "@/lib/match-analysis";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -94,7 +94,9 @@ function jsonError(
   return NextResponse.json({ error: message, code }, { status });
 }
 
-async function fetchUserByUsername(username: string): Promise<DailyDevUserData> {
+async function fetchUserByUsername(
+  username: string,
+): Promise<DailyDevUserData> {
   const profileResult = await executeDailyDevGraphQL<UserProfileQueryResult>(
     USER_PROFILE_QUERY,
     { username },
@@ -177,9 +179,15 @@ export async function POST(request: Request) {
       const persona = await analyzeDeveloperPersona(profile, stack, readTags);
       techPersonality = persona.techPersonality;
     } catch (geminiError) {
-      console.warn("[match] Gemini persona failed, using fallback:", geminiError);
-      techPersonality = buildFallbackPersona(profile, stack, readTags)
-        .techPersonality;
+      console.warn(
+        "[match] Gemini persona failed, using fallback:",
+        geminiError,
+      );
+      techPersonality = buildFallbackPersona(
+        profile,
+        stack,
+        readTags,
+      ).techPersonality;
       personaSource = "fallback";
     }
 

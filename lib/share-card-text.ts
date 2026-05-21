@@ -25,7 +25,9 @@ export function buildXTweetText(input: ShareTweetInput): string {
   const handle = input.username ? ` @${input.username}` : "";
   const hashtag = "#dailydevhackathon";
 
-  const link = (input.imageUrl?.trim() || input.appUrl.replace(/\/$/, "")).trim();
+  const link = (
+    input.imageUrl?.trim() || input.appUrl.replace(/\/$/, "")
+  ).trim();
   const suffix = `\n\n${link}\n\n${hashtag}`;
   /** X treats any http(s) link as 23 characters in the 280 limit. */
   const suffixLen = 2 + 23 + 2 + hashtag.length;

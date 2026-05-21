@@ -1,6 +1,6 @@
 import { resolveAvatarUrl } from "@/lib/avatar";
-import { executeDailyDevGraphQL } from "./daily-dev";
 import type { DailyDevReadTag, DailyDevStackItem } from "./daily-dev";
+import { executeDailyDevGraphQL } from "./daily-dev";
 import type { PerfectMatch } from "./match-analysis";
 
 interface DailyDevUserSummary {
@@ -207,7 +207,9 @@ export async function findRealDeveloperMatches(
     const displayStack =
       stackTitles.length > 0
         ? stackTitles
-        : sharedTags.slice(0, 5).map((t) => t.charAt(0).toUpperCase() + t.slice(1));
+        : sharedTags
+            .slice(0, 5)
+            .map((t) => t.charAt(0).toUpperCase() + t.slice(1));
 
     const maxScore = 99;
     const minScore = 85;

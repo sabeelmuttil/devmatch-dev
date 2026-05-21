@@ -1,5 +1,5 @@
-import html2canvas from "html2canvas";
 import { toJpeg, toPng } from "html-to-image";
+import html2canvas from "html2canvas";
 
 export interface DnaEntry {
   label: string;
@@ -109,7 +109,10 @@ async function embedImagesInPlace(root: HTMLElement): Promise<() => void> {
     }),
   );
 
-  return () => backups.forEach(({ img, src }) => { img.src = src; });
+  return () =>
+    backups.forEach(({ img, src }) => {
+      img.src = src;
+    });
 }
 
 async function captureWithHtml2Canvas(
