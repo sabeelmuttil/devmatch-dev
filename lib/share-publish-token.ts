@@ -1,10 +1,9 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 
-/** Compact JSON for URL token (keeps encoded id under ~900 chars). */
+/** Compact JSON for URL token — keep encoded length small so X/tweets do not truncate. */
 interface CompactCard {
   n: string;
   u?: string;
-  a?: string | null;
   p: string;
   d?: string;
   s?: string[];
@@ -14,33 +13,43 @@ interface CompactCard {
 }
 
 function toCompact(payload: ShareCardPayload): CompactCard {
-  const avatar =
-    payload.avatar && payload.avatar.length < 100 ? payload.avatar : null;
-  return {
-    n: payload.name.slice(0, 48),
-    u: payload.username?.slice(0, 32),
-    a: avatar,
-    p: payload.persona.slice(0, 64),
-    d: payload.personaDescription?.slice(0, 90),
-    s: payload.skills?.slice(0, 3),
-    t: payload.techDna?.slice(0, 6),
-    g: payload.tags?.slice(0, 6),
-    m: payload.topMatch
-      ? {
-          n: payload.topMatch.name,
-          u: payload.topMatch.username,
-          s: payload.topMatch.matchScore,
-          r: payload.topMatch.matchReason.slice(0, 100),
-        }
-      : undefined,
+  const compact: CompactCard = {
+    n: payload.name.slice(0, 40),
+    p: payload.persona.slice(0, 48),
   };
+
+  if (payload.username) compact.u = payload.username.slice(0, 24);
+
+  // Never embed avatar URLs — they are long and break share links when truncated.
+  const desc = payload.personaDescription?.trim();
+  if (desc) compact.d = desc.slice(0, 60);
+
+  const skills = (payload.skills ?? []).filter(Boolean).slice(0, 3);
+  if (skills.length) compact.s = skills;
+
+  const dna = (payload.techDna ?? []).filter((d) => d?.label).slice(0, 4);
+  if (dna.length) compact.t = dna;
+
+  const tags = (payload.tags ?? []).filter(Boolean).slice(0, 4);
+  if (tags.length) compact.g = tags;
+
+  if (payload.topMatch) {
+    compact.m = {
+      n: payload.topMatch.name.slice(0, 24),
+      u: payload.topMatch.username.slice(0, 20),
+      s: payload.topMatch.matchScore,
+      r: payload.topMatch.matchReason.slice(0, 50),
+    };
+  }
+
+  return compact;
 }
 
 function fromCompact(c: CompactCard): ShareCardPayload {
   return {
     name: c.n,
     username: c.u,
-    avatar: c.a,
+    avatar: null,
     persona: c.p,
     personaDescription: c.d,
     skills: c.s ?? [],
@@ -57,7 +66,6 @@ function fromCompact(c: CompactCard): ShareCardPayload {
   };
 }
 
-/** Works in browser and Node (no Buffer base64url — unsupported in browser polyfills). */
 function utf8ToBase64Url(text: string): string {
   const bytes = new TextEncoder().encode(text);
   let binary = "";
@@ -92,4 +100,19 @@ export function decodeShareToken(token: string): ShareCardPayload | null {
   } catch {
     return null;
   }
+}
+
+/** True if token looks cut off (common when a long URL is pasted from X). */
+export function isLikelyTruncatedToken(token: string): boolean {
+  const raw = token.trim();
+  if (raw.length < 80) return true;
+  if (raw.includes('{"n"') || raw.startsWith("eyJ")) {
+    try {
+      decodeShareToken(raw);
+      return false;
+    } catch {
+      return true;
+    }
+  }
+  return decodeShareToken(raw) === null && raw.length > 0;
 }

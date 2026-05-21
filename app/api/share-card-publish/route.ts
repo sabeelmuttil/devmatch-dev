@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
 import type { ShareCardPayload } from "@/lib/export-card-image";
-import { publishShareCardShort } from "@/lib/share-publish-store";
-import { encodeShareToken, decodeShareToken } from "@/lib/share-publish-token";
 import { renderShareCardImage } from "@/lib/share-card-og";
+import { publishShareCardShort } from "@/lib/share-publish-store";
+import {
+  decodeShareToken,
+  encodeShareToken,
+  isLikelyTruncatedToken,
+} from "@/lib/share-publish-token";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -42,10 +46,10 @@ export async function GET(request: Request) {
 
   const decoded = decodeShareToken(token);
   if (!decoded) {
-    return NextResponse.json(
-      { error: "Invalid or expired card link" },
-      { status: 404 },
-    );
+    const hint = isLikelyTruncatedToken(token)
+      ? "Card link was cut off (too long). Open dailydevmatch.dev, run your match again, and use Share on X for a fresh link."
+      : "Invalid card link.";
+    return NextResponse.json({ error: hint }, { status: 404 });
   }
 
   try {
