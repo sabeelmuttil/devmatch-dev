@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
+import { Avatar } from "@/components/Avatar";
 import { ShareCard } from "@/components/ShareCard";
 
 export interface MatchProfile {
@@ -36,6 +36,7 @@ export interface MatchResult {
   stack: { id: string; section: string; title: string }[];
   tags: string[];
   techPersonality: TechPersonality;
+  personaSource?: "gemini" | "fallback";
   perfectMatches: PerfectMatch[];
 }
 
@@ -74,15 +75,19 @@ function AmbientBackground() {
   );
 }
 
+function dailyDevProfileUrl(username: string): string {
+  return `https://app.daily.dev/${username}`;
+}
+
 function SiteHeader() {
   return (
     <header className="relative z-10 flex items-center justify-between px-4 py-5 sm:px-8">
       <div className="flex items-center gap-2.5">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 font-mono text-sm font-bold text-white shadow-lg shadow-violet-500/30">
-          DM
+          DD
         </div>
         <span className="font-semibold tracking-tight text-white">
-          DevMatch<span className="text-cyan-400">.dev</span>
+          dailydevmatch<span className="text-cyan-400">.dev</span>
         </span>
       </div>
       <span className="hidden rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300 sm:inline-block">
@@ -340,7 +345,8 @@ export function ResultsView({
   data: MatchResult;
   onReset: () => void;
 }) {
-  const { profile, techPersonality, perfectMatches, tags, stack } = data;
+  const { profile, techPersonality, perfectMatches, tags, stack, personaSource } =
+    data;
   const dnaEntries = Object.entries(techPersonality.techDna).sort(
     ([, a], [, b]) => b - a,
   );
@@ -353,20 +359,13 @@ export function ResultsView({
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-4 sm:px-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            {profile.image ? (
-              <Image
-                src={profile.image}
-                alt={profile.name ?? profile.username ?? "Profile"}
-                width={56}
-                height={56}
-                className="rounded-full ring-2 ring-violet-500/50"
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 font-bold text-white">
-                {(profile.name ?? profile.username ?? "?")[0]?.toUpperCase()}
-              </div>
-            )}
+            <Avatar
+              src={profile.image}
+              name={profile.name ?? profile.username ?? "Developer"}
+              username={profile.username}
+              size={56}
+              ringClassName="ring-2 ring-violet-500/50"
+            />
             <div>
               <h2 className="text-xl font-bold text-white sm:text-2xl">
                 {profile.name ?? profile.username}
@@ -394,7 +393,7 @@ export function ResultsView({
             <div className="space-y-4">
               {dnaEntries.map(([label, value], i) => (
                 <DnaBar
-                  key={label}
+                  key={`dna-${i}-${label}`}
                   label={label}
                   value={value}
                   colorClass={DNA_COLORS[i % DNA_COLORS.length]}
@@ -408,9 +407,9 @@ export function ResultsView({
                   Your stack
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {stack.slice(0, 12).map((item) => (
+                  {stack.slice(0, 12).map((item, i) => (
                     <span
-                      key={item.id}
+                      key={item.id || `stack-${i}`}
                       className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs text-violet-200"
                     >
                       {item.title}
@@ -431,6 +430,13 @@ export function ResultsView({
               <p className="text-xs font-medium uppercase tracking-wider text-cyan-400/80">
                 Developer Persona
               </p>
+              {personaSource === "fallback" && (
+                <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  Gemini unavailable — showing a local estimate. Add a valid{" "}
+                  <code className="text-amber-100">GEMINI_API_KEY</code> in{" "}
+                  <code className="text-amber-100">.env</code> for AI personas.
+                </p>
+              )}
               <div className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
                 <div className="animate-float relative">
                   <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-2xl" />
@@ -446,9 +452,9 @@ export function ResultsView({
               </div>
               {tags.length > 0 && (
                 <div className="mt-6 flex flex-wrap justify-center gap-1.5">
-                  {tags.slice(0, 6).map((tag) => (
+                  {tags.slice(0, 6).map((tag, i) => (
                     <span
-                      key={tag}
+                      key={`tag-${i}-${tag}`}
                       className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300"
                     >
                       #{tag}
@@ -464,19 +470,35 @@ export function ResultsView({
               </p>
               <ShareCard
                 name={profile.name ?? profile.username ?? "Developer"}
-                avatar={
-                  profile.image ??
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(profile.username ?? "dev")}`
-                }
+                username={profile.username ?? undefined}
+                avatar={profile.image ?? undefined}
                 persona={techPersonality.title}
-                skills={
-                  stack.length >= 3
-                    ? stack.slice(0, 3).map((s) => s.title)
-                    : [
-                        ...stack.map((s) => s.title),
-                        ...dnaEntries.map(([label]) => label),
-                      ].slice(0, 3)
+                personaDescription={techPersonality.description}
+                techDna={dnaEntries.map(([label, value]) => ({
+                  label,
+                  value,
+                }))}
+                tags={tags}
+                topMatch={
+                  perfectMatches[0]
+                    ? {
+                        name: perfectMatches[0].name,
+                        username: perfectMatches[0].username,
+                        matchScore: perfectMatches[0].matchScore,
+                        matchReason: perfectMatches[0].matchReason,
+                      }
+                    : undefined
                 }
+                skills={[
+                  ...new Set(
+                    stack.length >= 3
+                      ? stack.map((s) => s.title)
+                      : [
+                          ...stack.map((s) => s.title),
+                          ...dnaEntries.map(([label]) => label),
+                        ],
+                  ),
+                ].slice(0, 3) as [string, string, string] | string[]}
               />
             </div>
           </div>
@@ -489,7 +511,7 @@ export function ResultsView({
                 Compatible Developers
               </h3>
               <p className="mt-1 text-sm text-zinc-500">
-                AI-curated matches based on your Tech DNA
+                Real daily.dev creators matched to your read tags &amp; stack
               </p>
             </div>
           </div>
@@ -502,13 +524,12 @@ export function ResultsView({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Image
+                    <Avatar
                       src={match.avatar}
-                      alt={match.name}
-                      width={48}
-                      height={48}
-                      className="rounded-full ring-2 ring-white/10 transition-all group-hover:ring-violet-500/50"
-                      unoptimized
+                      name={match.name}
+                      username={match.username}
+                      size={48}
+                      ringClassName="ring-2 ring-white/10 transition-all group-hover:ring-violet-500/50"
                     />
                     <div>
                       <p className="font-semibold text-white">{match.name}</p>
@@ -544,9 +565,9 @@ export function ResultsView({
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-1.5">
-                  {match.stack.slice(0, 5).map((tech) => (
+                  {match.stack.slice(0, 5).map((tech, i) => (
                     <span
-                      key={tech}
+                      key={`${match.username}-tech-${i}`}
                       className="rounded-md bg-zinc-800/80 px-2 py-0.5 text-xs text-zinc-300"
                     >
                       {tech}
@@ -555,9 +576,10 @@ export function ResultsView({
                 </div>
 
                 <a
-                  href={`https://app.daily.dev/${match.username}`}
+                  href={dailyDevProfileUrl(match.username)}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={`View @${match.username} on daily.dev`}
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-500/40 bg-violet-500/10 py-3 text-sm font-semibold text-violet-200 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-200"
                 >
                   Connect

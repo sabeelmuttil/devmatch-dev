@@ -1,4 +1,5 @@
-const DAILY_DEV_API_BASE = "https://api.daily.dev/public/v1";
+const DAILY_DEV_GRAPHQL_URL =
+  process.env.DAILY_DEV_GRAPHQL_URL ?? "https://api.daily.dev/graphql";
 
 export interface DailyDevProfile {
   id: string;
@@ -17,21 +18,23 @@ export interface DailyDevStackItem {
   title: string;
   icon?: string | null;
   startedAt?: string | null;
-  tool?: { id: string; title: string; faviconUrl?: string | null };
 }
 
-export interface DailyDevTag {
+export interface DailyDevReadTag {
   name: string;
+  count: number;
 }
 
-type PaginatedStackResponse = {
-  data: DailyDevStackItem[];
-  pagination?: { hasNextPage: boolean; cursor: string | null };
-};
+export interface DailyDevUserData {
+  profile: DailyDevProfile;
+  stack: DailyDevStackItem[];
+  readTags: DailyDevReadTag[];
+}
 
-type TagsResponse = {
-  data: DailyDevTag[];
-};
+interface GraphQLResponse<T> {
+  data?: T;
+  errors?: Array<{ message: string; extensions?: { code?: string } }>;
+}
 
 export class DailyDevApiError extends Error {
   constructor(
@@ -56,70 +59,81 @@ function getPat(): string {
   return pat;
 }
 
-async function dailyDevFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function executeDailyDevGraphQL<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+): Promise<T> {
   const pat = getPat();
-  const url = `${DAILY_DEV_API_BASE}${path}`;
 
-  const response = await fetch(url, {
-    ...init,
+  const response = await fetch(DAILY_DEV_GRAPHQL_URL, {
+    method: "POST",
     headers: {
       Authorization: `Bearer ${pat}`,
+      "Content-Type": "application/json",
       Accept: "application/json",
-      ...init?.headers,
     },
+    body: JSON.stringify({ query, variables }),
   });
 
-  let body: unknown;
+  let body: GraphQLResponse<T>;
   try {
-    body = await response.json();
+    body = (await response.json()) as GraphQLResponse<T>;
   } catch {
-    body = null;
+    throw new DailyDevApiError(
+      "Invalid response from daily.dev GraphQL API",
+      502,
+      "invalid_response",
+    );
+  }
+
+  if (body.errors?.length) {
+    const message = body.errors[0]?.message ?? "GraphQL request failed";
+    const code = body.errors[0]?.extensions?.code;
+
+    if (
+      message.toLowerCase().includes("user not found") ||
+      code === "FORBIDDEN"
+    ) {
+      throw new DailyDevApiError(
+        "No daily.dev user found with that username",
+        404,
+        "user_not_found",
+      );
+    }
+
+    if (
+      message.toLowerCase().includes("unauthenticated") ||
+      code === "UNAUTHENTICATED"
+    ) {
+      throw new DailyDevApiError(
+        "Invalid or expired daily.dev API token",
+        401,
+        "unauthorized",
+      );
+    }
+
+    throw new DailyDevApiError(message, 502, "graphql_error");
   }
 
   if (!response.ok) {
-    const err = body as { message?: string; error?: string } | null;
     throw new DailyDevApiError(
-      err?.message ?? `daily.dev API error (${response.status})`,
-      response.status,
-      err?.error,
+      `daily.dev API error (${response.status})`,
+      response.status === 401 ? 401 : 502,
+      "http_error",
     );
   }
 
-  return body as T;
-}
-
-export async function fetchDailyDevProfile(): Promise<DailyDevProfile> {
-  return dailyDevFetch<DailyDevProfile>("/profile/");
-}
-
-export async function fetchDailyDevStack(): Promise<DailyDevStackItem[]> {
-  const items: DailyDevStackItem[] = [];
-  let cursor: string | undefined;
-
-  do {
-    const params = new URLSearchParams({ limit: "100" });
-    if (cursor) params.set("cursor", cursor);
-
-    const page = await dailyDevFetch<PaginatedStackResponse>(
-      `/profile/stack/?${params}`,
+  if (!body.data) {
+    throw new DailyDevApiError(
+      "Empty response from daily.dev GraphQL API",
+      502,
+      "empty_response",
     );
-    items.push(...page.data);
+  }
 
-    if (page.pagination?.hasNextPage && page.pagination.cursor) {
-      cursor = page.pagination.cursor;
-    } else {
-      cursor = undefined;
-    }
-  } while (cursor);
-
-  return items;
+  return body.data;
 }
 
-export async function fetchDailyDevTags(): Promise<DailyDevTag[]> {
-  const result = await dailyDevFetch<TagsResponse>("/tags/");
-  return result.data;
-}
-
-export function stackItemLabel(item: DailyDevStackItem): string {
-  return item.tool?.title ?? item.title;
+export function stackItemTitle(item: DailyDevStackItem): string {
+  return item.title;
 }

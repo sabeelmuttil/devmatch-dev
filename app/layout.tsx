@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DevMatch.dev — Find Your Tech Soulmate",
+  title: "dailydevmatch.dev — Find Your Tech Soulmate",
   description:
-    "AI-powered developer matchmaking for daily.dev. Discover your Tech DNA and compatible dev matches.",
+    "AI-powered developer matchmaking for daily.dev. Discover your Tech DNA and compatible dev matches at dailydevmatch.dev.",
 };
 
 export default function RootLayout({
