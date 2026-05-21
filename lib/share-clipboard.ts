@@ -1,3 +1,13 @@
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (!navigator.clipboard?.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Copy PNG to clipboard (Chrome needs Promise resolver for image blobs). */
 export async function copyPngToClipboard(blob: Blob): Promise<boolean> {
   if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {

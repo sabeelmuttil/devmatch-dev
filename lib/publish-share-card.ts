@@ -1,10 +1,17 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { encodeShareToken } from "@/lib/share-publish-token";
 
-/** Short public PNG URL via server (preferred — survives X link limits). */
+export interface PublishedShareUrls {
+  /** Human-friendly page — card fills the viewport. */
+  pageUrl: string;
+  /** Direct PNG for X / crawlers. */
+  pngUrl: string;
+}
+
+/** Publish card and return short page + PNG URLs. */
 export async function publishShareCardImage(
   payload: ShareCardPayload,
-): Promise<string> {
+): Promise<PublishedShareUrls> {
   const res = await fetch("/api/share-card-publish", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -17,20 +24,32 @@ export async function publishShareCardImage(
   }
 
   const data = (await res.json()) as {
+    pageUrl?: string;
+    pngUrl?: string;
     imageUrl?: string;
     imageUrlShort?: string;
   };
-  // Prefer stateless URL so X / crawlers can load the image after deploy.
-  if (data.imageUrl) return data.imageUrl;
-  if (data.imageUrlShort) return data.imageUrlShort;
-  throw new Error("No image URL returned");
+
+  const pageUrl = data.pageUrl ?? data.imageUrlShort;
+  const pngUrl = data.pngUrl ?? data.imageUrl;
+  if (!pageUrl || !pngUrl) throw new Error("No share URLs returned");
+  return { pageUrl, pngUrl };
 }
 
-/** Fallback: long query token (can break if URL is truncated). */
-export function buildPublicShareImageUrl(
+function sharePaths(origin: string, id: string) {
+  const base = origin.replace(/\/$/, "");
+  const encoded = encodeURIComponent(id);
+  return {
+    pageUrl: `${base}/s/${encoded}`,
+    pngUrl: `${base}/api/share-card-publish/${encoded}`,
+  };
+}
+
+/** Fallback when POST publish fails — stateless compressed token. */
+export function buildPublicShareUrls(
   payload: ShareCardPayload,
   origin: string,
-): string {
-  const token = encodeShareToken(payload);
-  return `${origin.replace(/\/$/, "")}/api/share-card-publish?t=${encodeURIComponent(token)}`;
+): PublishedShareUrls {
+  const token = encodeShareToken(payload, { forPublicUrl: true });
+  return sharePaths(origin, token);
 }

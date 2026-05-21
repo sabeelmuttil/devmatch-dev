@@ -27,14 +27,20 @@ export async function POST(request: Request) {
   }
 
   const origin = originFromRequest(request);
-  const token = encodeShareToken(body);
-  const imageUrl = `${origin}/api/share-card-publish?t=${encodeURIComponent(token)}`;
+  const token = encodeShareToken(body, { forPublicUrl: true });
+  const shortId = await publishShareCardShort(body);
 
-  // Short id for faster local renders (same Node process only).
-  const shortId = publishShareCardShort(body);
-  const imageUrlShort = `${origin}/api/share-card-publish/${shortId}`;
+  const pngUrl = (id: string) =>
+    `${origin}/api/share-card-publish/${encodeURIComponent(id)}`;
+  const pageUrl = (id: string) => `${origin}/s/${encodeURIComponent(id)}`;
 
-  return NextResponse.json({ id: shortId, imageUrl, imageUrlShort });
+  return NextResponse.json({
+    id: shortId,
+    pngUrl: pngUrl(shortId),
+    pageUrl: pageUrl(shortId),
+    imageUrl: pngUrl(shortId),
+    imageUrlShort: pageUrl(shortId),
+  });
 }
 
 /** GET ?t= — stateless card image (works across serverless instances). */
@@ -53,7 +59,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = renderShareCardImage(decoded);
+    const response = renderShareCardImage(decoded, origin);
     response.headers.set("Cache-Control", "public, max-age=86400, immutable");
     return response;
   } catch (err) {

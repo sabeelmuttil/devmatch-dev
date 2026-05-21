@@ -7,8 +7,6 @@ export interface ShareTweetInput {
   persona: string;
   skills: string[];
   appUrl: string;
-  /** Public PNG URL — X embeds direct image links in the timeline. */
-  imageUrl?: string;
 }
 
 function truncate(text: string, max: number): string {
@@ -17,21 +15,15 @@ function truncate(text: string, max: number): string {
 }
 
 /**
- * Compact tweet for X intent (max 275 chars). Full details stay on the card image.
+ * Tweet body (no URL) — card link is passed via X intent `url` so the full link is not truncated.
  */
 export function buildXTweetText(input: ShareTweetInput): string {
   const skills = input.skills.filter((s) => s && s !== "—").slice(0, 3);
   const skillPart = skills.length > 0 ? ` · ${skills.join(" · ")}` : "";
   const handle = input.username ? ` @${input.username}` : "";
   const hashtag = "#dailydevhackathon";
-
-  const link = (
-    input.imageUrl?.trim() || input.appUrl.replace(/\/$/, "")
-  ).trim();
-  const suffix = `\n\n${link}\n\n${hashtag}`;
-  /** X treats any http(s) link as 23 characters in the 280 limit. */
-  const suffixLen = 2 + 23 + 2 + hashtag.length;
-  const bodyBudget = X_TWEET_MAX - suffixLen;
+  const suffix = `\n\n${hashtag}`;
+  const bodyBudget = X_TWEET_MAX - suffix.length;
 
   let body = `My Tech Identity: ${truncate(input.persona, 48)}${skillPart}${handle}`;
   if (body.length > bodyBudget) {
@@ -44,7 +36,18 @@ export function buildXTweetText(input: ShareTweetInput): string {
   return (body + suffix).slice(0, X_TWEET_MAX);
 }
 
-/** Single `text` param — avoids double URL + length issues with separate `url` param. */
-export function buildXIntentUrl(text: string): string {
-  return `https://x.com/intent/tweet?${new URLSearchParams({ text }).toString()}`;
+export interface XIntentOptions {
+  text: string;
+  /** Full card image URL — X appends this via the `url` param (not the 275-char text cap). */
+  cardImageUrl?: string;
+  /** Fallback when no card URL is available. */
+  appUrl?: string;
+}
+
+/** Opens X compose with body text + full card link in `url` (avoids cutting long links inside `text`). */
+export function buildXIntentUrl(options: XIntentOptions): string {
+  const params = new URLSearchParams({ text: options.text });
+  const link = (options.cardImageUrl?.trim() || options.appUrl?.replace(/\/$/, "") || "").trim();
+  if (link) params.set("url", link);
+  return `https://x.com/intent/tweet?${params.toString()}`;
 }

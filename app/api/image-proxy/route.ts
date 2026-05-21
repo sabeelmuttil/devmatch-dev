@@ -38,8 +38,11 @@ export async function GET(request: Request) {
     }
 
     const buffer = await upstream.arrayBuffer();
-    const contentType =
+    let contentType =
       upstream.headers.get("content-type") ?? "application/octet-stream";
+    if (contentType.includes("svg")) {
+      contentType = "image/svg+xml";
+    }
 
     return new NextResponse(buffer, {
       headers: {

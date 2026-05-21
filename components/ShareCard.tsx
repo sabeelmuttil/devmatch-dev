@@ -8,10 +8,15 @@ import {
   type ShareCardPayload,
   type TopMatchEntry,
 } from "@/lib/export-card-image";
-import { buildPublicShareImageUrl } from "@/lib/publish-share-card";
+import { proxiedAvatarUrl } from "@/lib/avatar";
+import {
+  buildPublicShareUrls,
+  publishShareCardImage,
+  type PublishedShareUrls,
+} from "@/lib/publish-share-card";
 import { buildXIntentUrl, buildXTweetText } from "@/lib/share-card-text";
-import { copyPngToClipboard } from "@/lib/share-clipboard";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { copyPngToClipboard, copyTextToClipboard } from "@/lib/share-clipboard";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface ShareCardProps {
   name: string;
@@ -107,6 +112,7 @@ export function ShareCard({
   className = "",
 }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const shareOnXLock = useRef(false);
   const [exporting, setExporting] = useState<"png" | "jpeg" | "x" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
@@ -155,15 +161,41 @@ export function ShareCard({
     ],
   );
 
-  const publicImageUrl = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      return buildPublicShareImageUrl(serverPayload, window.location.origin);
-    } catch (err) {
-      console.warn("[ShareCard] share URL build failed:", err);
-      return null;
-    }
+  const [shareUrls, setShareUrls] = useState<PublishedShareUrls | null>(null);
+  const [shareLinkLoading, setShareLinkLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const origin = window.location.origin;
+
+    setShareLinkLoading(true);
+    publishShareCardImage(serverPayload)
+      .then((urls) => {
+        if (!cancelled) setShareUrls(urls);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          try {
+            setShareUrls(buildPublicShareUrls(serverPayload, origin));
+          } catch (err) {
+            console.warn("[ShareCard] share URL build failed:", err);
+            setShareUrls(null);
+          }
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setShareLinkLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [serverPayload]);
+
+  const displayAvatarSrc = useMemo(() => {
+    if (typeof window === "undefined") return avatar ?? undefined;
+    return proxiedAvatarUrl(window.location.origin, avatar, username ?? name);
+  }, [avatar, username, name]);
 
   const tweetInput = useMemo(
     () => ({
@@ -178,8 +210,9 @@ export function ShareCard({
 
   const handleShareOnX = useCallback(() => {
     const node = cardRef.current;
-    if (!node) return;
+    if (!node || shareOnXLock.current) return;
 
+    shareOnXLock.current = true;
     setExporting("x");
     setExportError(null);
     setShareHint(null);
@@ -187,41 +220,30 @@ export function ShareCard({
     const filename = `tech-identity-${slugify(username ?? name)}.png`;
     const origin =
       typeof window !== "undefined" ? window.location.origin : shareAppUrl;
-    let imageUrl = publicImageUrl ?? "";
-    if (!imageUrl) {
+    let pngUrl = shareUrls?.pngUrl ?? "";
+    if (!pngUrl) {
       try {
-        imageUrl = buildPublicShareImageUrl(serverPayload, origin);
+        pngUrl = buildPublicShareUrls(serverPayload, origin).pngUrl;
       } catch (encodeErr) {
-        console.warn("[ShareCard] image URL encode failed:", encodeErr);
+        console.warn("[ShareCard] PNG URL build failed:", encodeErr);
       }
     }
-    const tweetText = buildXTweetText({
-      ...tweetInput,
-      imageUrl: imageUrl || undefined,
+    const tweetText = buildXTweetText(tweetInput);
+    const xUrl = buildXIntentUrl({
+      text: tweetText,
+      cardImageUrl: pngUrl || undefined,
+      appUrl: shareAppUrl,
     });
-    const xUrl = buildXIntentUrl(tweetText);
 
     // Must open X in the same click tick — async window.open is blocked as a popup.
-    let opened = false;
     const xWindow = window.open(
       xUrl,
-      "devmatch-share-x",
-      "noopener,noreferrer,width=600,height=700",
+      "_blank",
+      "noopener,noreferrer",
     );
-    if (xWindow) {
-      opened = true;
-    } else {
-      const link = document.createElement("a");
-      link.href = xUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      opened = true;
-    }
 
-    if (!opened) {
+    if (!xWindow) {
+      shareOnXLock.current = false;
       setExporting(null);
       setShareHint(
         "Could not open X. Allow pop-ups for this site, then try again.",
@@ -234,13 +256,13 @@ export function ShareCard({
         const blob = await captureCardBlob(node, "png", serverPayload, {
           preferClient: true,
         });
-        const copied = await copyPngToClipboard(blob);
-        if (!copied) downloadBlob(blob, filename);
+        const copiedImage = await copyPngToClipboard(blob);
+        if (!copiedImage) downloadBlob(blob, filename);
 
         setShareHint(
-          copied
-            ? "X is open — paste your card image with ⌘V / Ctrl+V if you want it in the composer."
-            : "X is open — attach the downloaded PNG in the composer if you want the image file.",
+          copiedImage
+            ? "X is open with your full card link attached. PNG copied — paste with ⌘V / Ctrl+V for the image."
+            : "X is open with your full card link attached. Use the downloaded PNG or copy the link below.",
         );
       } catch (err) {
         console.error("[ShareCard] share prep failed:", err);
@@ -248,10 +270,11 @@ export function ShareCard({
           "X is open. Card image copy failed — use the image link in your tweet.",
         );
       } finally {
+        shareOnXLock.current = false;
         setExporting(null);
       }
     })();
-  }, [username, name, serverPayload, tweetInput, shareAppUrl, publicImageUrl]);
+  }, [username, name, serverPayload, tweetInput, shareAppUrl, shareUrls]);
 
   const downloadCard = useCallback(
     async (format: "png" | "jpeg") => {
@@ -336,7 +359,7 @@ export function ShareCard({
             <div className="flex items-start gap-4">
               <div className="relative shrink-0 overflow-hidden rounded-2xl ring-2 ring-white/20">
                 <Avatar
-                  src={avatar}
+                  src={displayAvatarSrc}
                   name={name}
                   username={username}
                   size={72}
@@ -516,14 +539,14 @@ export function ShareCard({
       <div className="flex w-full max-w-[360px] flex-col gap-2">
         <button
           type="button"
-          disabled={!!exporting || !publicImageUrl}
+          disabled={!!exporting || shareLinkLoading || !shareUrls}
           onClick={handleShareOnX}
           className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-gradient-to-r from-zinc-900 to-zinc-800 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:border-white/25 hover:from-zinc-800 hover:to-zinc-700 active:scale-[0.98] disabled:opacity-50"
         >
           <XIcon className="h-4 w-4 text-zinc-300 group-hover:text-white" />
           {exporting === "x"
             ? "Preparing card…"
-            : !publicImageUrl
+            : shareLinkLoading || !shareUrls
               ? "Preparing link…"
               : "Share on X"}
         </button>
@@ -549,9 +572,33 @@ export function ShareCard({
           </button>
         </div>
 
+        {shareUrls ? (
+          <div className="rounded-lg border border-white/10 bg-black/40 p-3">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+              Share link (opens full screen)
+            </p>
+            <p className="break-all font-mono text-[11px] leading-relaxed text-cyan-300/90">
+              {shareUrls.pageUrl}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void copyTextToClipboard(shareUrls.pageUrl).then((ok) => {
+                  setShareHint(
+                    ok ? "Card link copied to clipboard." : "Could not copy link.",
+                  );
+                });
+              }}
+              className="mt-2 text-[10px] font-medium text-violet-300 hover:text-violet-200"
+            >
+              Copy link
+            </button>
+          </div>
+        ) : null}
+
         <p className="text-center text-[10px] leading-relaxed text-zinc-600">
-          Opens X right away with your post and card image link. The PNG is
-          copied in the background so you can paste it into the composer.
+          Opens X with your full card link attached. PNG is copied so you can
+          paste the image into the composer.
         </p>
       </div>
     </div>

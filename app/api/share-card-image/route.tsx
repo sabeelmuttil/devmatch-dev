@@ -12,8 +12,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+    new URL(request.url).origin;
+
   try {
-    return renderShareCardImage(body);
+    return renderShareCardImage(body, origin);
   } catch (err) {
     console.error("[share-card-image]", err);
     return NextResponse.json(

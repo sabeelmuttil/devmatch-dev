@@ -8,7 +8,14 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function resolvePayload(id: string) {
+function originFromRequest(request: Request): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+    new URL(request.url).origin
+  );
+}
+
+async function resolvePayload(id: string) {
   const raw = decodeURIComponent(id).trim();
 
   if (isShortShareId(raw)) {
@@ -19,11 +26,12 @@ function resolvePayload(id: string) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const payload = resolvePayload(id);
+  const origin = originFromRequest(request);
+  const payload = await resolvePayload(id);
 
   if (!payload) {
     return NextResponse.json(
@@ -33,7 +41,7 @@ export async function GET(
   }
 
   try {
-    const response = renderShareCardImage(payload);
+    const response = renderShareCardImage(payload, origin);
     response.headers.set("Cache-Control", "public, max-age=86400, immutable");
     return response;
   } catch (err) {

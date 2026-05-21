@@ -1,4 +1,5 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
+import { loadShareFromTmp, saveShareToTmp } from "@/lib/share-tmp-store";
 
 const TTL_MS = 60 * 60 * 1000;
 
@@ -11,21 +12,30 @@ function prune() {
   }
 }
 
-export function publishShareCardShort(payload: ShareCardPayload): string {
+export async function publishShareCardShort(
+  payload: ShareCardPayload,
+): Promise<string> {
   prune();
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  store.set(id, { payload, expires: Date.now() + TTL_MS });
+  const entry = { payload, expires: Date.now() + TTL_MS };
+  store.set(id, entry);
+  await saveShareToTmp(id, payload);
   return id;
 }
 
-export function getShareCardByShortId(id: string): ShareCardPayload | null {
+export async function getShareCardByShortId(
+  id: string,
+): Promise<ShareCardPayload | null> {
   const entry = store.get(id);
-  if (!entry) return null;
-  if (entry.expires < Date.now()) {
-    store.delete(id);
-    return null;
+  if (entry) {
+    if (entry.expires < Date.now()) {
+      store.delete(id);
+    } else {
+      return entry.payload;
+    }
   }
-  return entry.payload;
+
+  return loadShareFromTmp(id);
 }
 
 /** Short ids are 12 hex chars from UUID. */
