@@ -8,6 +8,38 @@ export interface PublishedShareUrls {
   pngUrl: string;
 }
 
+function publishKey(payload: ShareCardPayload): string {
+  return [
+    payload.name,
+    payload.username ?? "",
+    payload.persona,
+    payload.personaDescription ?? "",
+    (payload.skills ?? []).join(","),
+    (payload.techDna ?? []).map((d) => `${d.label}:${d.value}`).join(","),
+    (payload.tags ?? []).join(","),
+    payload.topMatch
+      ? `${payload.topMatch.username}:${payload.topMatch.matchScore}`
+      : "",
+  ].join("|");
+}
+
+const publishInFlight = new Map<string, Promise<PublishedShareUrls>>();
+
+/** Dedupes concurrent publishes (e.g. React Strict Mode double mount). */
+export function publishShareCardImageCached(
+  payload: ShareCardPayload,
+): Promise<PublishedShareUrls> {
+  const key = publishKey(payload);
+  const existing = publishInFlight.get(key);
+  if (existing) return existing;
+
+  const promise = publishShareCardImage(payload).finally(() => {
+    publishInFlight.delete(key);
+  });
+  publishInFlight.set(key, promise);
+  return promise;
+}
+
 /** Publish card and return short page + PNG URLs. */
 export async function publishShareCardImage(
   payload: ShareCardPayload,

@@ -751,3 +751,283 @@ export function renderShareCardImage(body: ShareCardPayload, origin: string) {
     height,
   });
 }
+
+const TWITTER_W = 1200;
+const TWITTER_H = 630;
+
+/** 2:1 image for X / Twitter `summary_large_image` (portrait card PNG is not supported). */
+export function renderTwitterPreviewImage(
+  body: ShareCardPayload,
+  origin: string,
+) {
+  const name = body.name?.trim() || "Developer";
+  const username = body.username?.trim() || "dev";
+  const persona = body.persona?.trim() || "Tech Explorer";
+  const skills = normalizeSkills(body.skills);
+  const techDna = (body.techDna ?? []).filter((d) => d?.label).slice(0, 3);
+  const avatar = resolveOgAvatarUrl(origin, body);
+  const desc = (body.personaDescription?.trim() ?? "").slice(0, 120);
+
+  const element = (
+    <div
+      style={{
+        display: "flex",
+        width: TWITTER_W,
+        height: TWITTER_H,
+        background: "linear-gradient(135deg, #1a0a2e 0%, #06060b 45%, #0a1628 100%)",
+        fontFamily:
+          "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+        padding: 48,
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          borderRadius: 24,
+          border: "3px solid #8b5cf6",
+          background: "#08080f",
+          overflow: "hidden",
+          padding: 40,
+          gap: 36,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              DD
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "white",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                DAILYDEVMATCH.DEV
+              </div>
+              <div
+                style={{ display: "flex", fontSize: 12, color: "#71717a" }}
+              >
+                Tech Identity Card
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+            <div
+              style={{
+                display: "flex",
+                width: 120,
+                height: 120,
+                borderRadius: 20,
+                border: "3px solid rgba(255,255,255,0.2)",
+                overflow: "hidden",
+                background: "#12121a",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatar}
+                width={112}
+                height={112}
+                alt={name}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 36,
+                  fontWeight: 700,
+                  color: "white",
+                }}
+              >
+                {name}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 20,
+                  color: "#22d3ee",
+                  fontFamily: "monospace",
+                }}
+              >
+                @{username}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              padding: "20px 24px",
+              borderRadius: 16,
+              border: "1px solid rgba(139,92,246,0.35)",
+              background:
+                "linear-gradient(90deg, rgba(46,16,78,0.9), #12121a, rgba(8,51,68,0.9))",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                fontSize: 11,
+                color: "#71717a",
+                letterSpacing: "0.15em",
+                fontWeight: 600,
+              }}
+            >
+              DEVELOPER PERSONA
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "#e9d5ff",
+              }}
+            >
+              {persona}
+            </div>
+            {desc ? (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 14,
+                  color: "#a1a1aa",
+                  lineHeight: 1.4,
+                }}
+              >
+                {desc}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: 320,
+            gap: 20,
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: 11,
+              color: "#71717a",
+              letterSpacing: "0.15em",
+              fontWeight: 600,
+            }}
+          >
+            CORE STACK
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {skills.map((skill, i) => (
+              <div
+                key={`tw-skill-${i}`}
+                style={{
+                  display: "flex",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  border: `1px solid ${SKILL_STYLES[i].border}`,
+                  background: SKILL_STYLES[i].bg,
+                  color: SKILL_STYLES[i].color,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  justifyContent: "center",
+                }}
+              >
+                {skill}
+              </div>
+            ))}
+          </div>
+          {techDna.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {techDna.map((entry, i) => (
+                <div
+                  key={`tw-dna-${i}`}
+                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 12,
+                      color: "#d4d4d8",
+                    }}
+                  >
+                    <span>{entry.label}</span>
+                    <span style={{ color: "#22d3ee" }}>{entry.value}%</span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      height: 8,
+                      borderRadius: 999,
+                      background: "#27272a",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        height: 8,
+                        width: `${entry.value}%`,
+                        background: DNA_GRADIENTS[i % DNA_GRADIENTS.length],
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 13,
+              color: "#71717a",
+              marginTop: 8,
+            }}
+          >
+            #dailydevhackathon
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return new ImageResponse(element, {
+    width: TWITTER_W,
+    height: TWITTER_H,
+  });
+}
+
+export function twitterPreviewApiPath(id: string): string {
+  return `/api/share-card-publish/${encodeURIComponent(id)}?social=1`;
+}

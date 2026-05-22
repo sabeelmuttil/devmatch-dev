@@ -1,3 +1,4 @@
+import { twitterPreviewApiPath } from "@/lib/share-card-og";
 import type { Metadata } from "next";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -18,18 +19,36 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const origin = originFromEnv();
-  const image = `${origin}${pngPath(id)}`;
+  const pageUrl = `${origin}/s/${encodeURIComponent(id)}`;
+  const socialImage = `${origin}${twitterPreviewApiPath(id)}`;
 
   return {
     title: "Tech Identity Card · dailydevmatch.dev",
-    description: "Developer Tech Identity from dailydevmatch.dev",
+    description:
+      "My developer Tech Identity from dailydevmatch.dev — daily.dev hackathon",
     openGraph: {
       type: "website",
-      images: [{ url: image, width: 1080, height: 1400, alt: "Tech Identity Card" }],
+      url: pageUrl,
+      title: "Tech Identity Card · dailydevmatch.dev",
+      description: "Developer Tech Identity from dailydevmatch.dev",
+      siteName: "dailydevmatch.dev",
+      images: [
+        {
+          url: socialImage,
+          width: 1200,
+          height: 630,
+          alt: "Tech Identity Card",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      images: [image],
+      title: "Tech Identity Card · dailydevmatch.dev",
+      description: "My developer Tech Identity from dailydevmatch.dev",
+      images: {
+        url: socialImage,
+        alt: "Tech Identity Card",
+      },
     },
   };
 }
@@ -71,6 +90,7 @@ export default async function ShareCardViewPage({ params }: PageProps) {
           fontFamily: "system-ui, sans-serif",
           fontSize: 12,
           color: "#71717a",
+          textAlign: "center",
         }}
       >
         dailydevmatch.dev · #dailydevhackathon

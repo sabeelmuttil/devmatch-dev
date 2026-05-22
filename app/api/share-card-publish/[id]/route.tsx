@@ -1,4 +1,7 @@
-import { renderShareCardImage } from "@/lib/share-card-og";
+import {
+  renderShareCardImage,
+  renderTwitterPreviewImage,
+} from "@/lib/share-card-og";
 import {
   getShareCardByShortId,
   isShortShareId,
@@ -31,6 +34,7 @@ export async function GET(
 ) {
   const { id } = await context.params;
   const origin = originFromRequest(request);
+  const social = new URL(request.url).searchParams.get("social") === "1";
   const payload = await resolvePayload(id);
 
   if (!payload) {
@@ -41,8 +45,11 @@ export async function GET(
   }
 
   try {
-    const response = renderShareCardImage(payload, origin);
+    const response = social
+      ? renderTwitterPreviewImage(payload, origin)
+      : renderShareCardImage(payload, origin);
     response.headers.set("Cache-Control", "public, max-age=86400, immutable");
+    response.headers.set("Content-Type", "image/png");
     return response;
   } catch (err) {
     console.error("[share-card-publish]", err);

@@ -11,7 +11,7 @@ import {
 import { proxiedAvatarUrl } from "@/lib/avatar";
 import {
   buildPublicShareUrls,
-  publishShareCardImage,
+  publishShareCardImageCached,
   type PublishedShareUrls,
 } from "@/lib/publish-share-card";
 import { buildXIntentUrl, buildXTweetText } from "@/lib/share-card-text";
@@ -169,7 +169,7 @@ export function ShareCard({
     const origin = window.location.origin;
 
     setShareLinkLoading(true);
-    publishShareCardImage(serverPayload)
+    publishShareCardImageCached(serverPayload)
       .then((urls) => {
         if (!cancelled) setShareUrls(urls);
       })
@@ -220,18 +220,18 @@ export function ShareCard({
     const filename = `tech-identity-${slugify(username ?? name)}.png`;
     const origin =
       typeof window !== "undefined" ? window.location.origin : shareAppUrl;
-    let pngUrl = shareUrls?.pngUrl ?? "";
-    if (!pngUrl) {
+    let pageUrl = shareUrls?.pageUrl ?? "";
+    if (!pageUrl) {
       try {
-        pngUrl = buildPublicShareUrls(serverPayload, origin).pngUrl;
+        pageUrl = buildPublicShareUrls(serverPayload, origin).pageUrl;
       } catch (encodeErr) {
-        console.warn("[ShareCard] PNG URL build failed:", encodeErr);
+        console.warn("[ShareCard] share page URL build failed:", encodeErr);
       }
     }
     const tweetText = buildXTweetText(tweetInput);
     const xUrl = buildXIntentUrl({
       text: tweetText,
-      cardImageUrl: pngUrl || undefined,
+      pageUrl: pageUrl || undefined,
       appUrl: shareAppUrl,
     });
 
@@ -597,8 +597,8 @@ export function ShareCard({
         ) : null}
 
         <p className="text-center text-[10px] leading-relaxed text-zinc-600">
-          Opens X with your full card link attached. PNG is copied so you can
-          paste the image into the composer.
+          Opens X with your share page link (preview image on X). PNG is copied
+          so you can paste the full card into the composer.
         </p>
       </div>
     </div>

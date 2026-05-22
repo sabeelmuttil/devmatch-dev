@@ -38,16 +38,19 @@ export function buildXTweetText(input: ShareTweetInput): string {
 
 export interface XIntentOptions {
   text: string;
-  /** Full card image URL — X appends this via the `url` param (not the 275-char text cap). */
-  cardImageUrl?: string;
-  /** Fallback when no card URL is available. */
+  /** Share page with Twitter Card meta — required for X link preview. */
+  pageUrl?: string;
   appUrl?: string;
 }
 
-/** Opens X compose with body text + full card link in `url` (avoids cutting long links inside `text`). */
+/** Opens X compose; `url` must be the HTML page (not raw PNG) so X can read twitter:card meta. */
 export function buildXIntentUrl(options: XIntentOptions): string {
   const params = new URLSearchParams({ text: options.text });
-  const link = (options.cardImageUrl?.trim() || options.appUrl?.replace(/\/$/, "") || "").trim();
+  const link = (
+    options.pageUrl?.trim() ||
+    options.appUrl?.replace(/\/$/, "") ||
+    ""
+  ).trim();
   if (link) params.set("url", link);
   return `https://x.com/intent/tweet?${params.toString()}`;
 }
