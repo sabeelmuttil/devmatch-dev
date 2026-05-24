@@ -95,7 +95,7 @@ After deploy, users can embed their Tech Identity:
 - Script: `<script src="https://YOUR_DOMAIN/embed.js" data-username="USERNAME" async></script>`
 - Copy snippets from the results page (**Embed on your site**)
 - **GitHub README** uses a PNG badge (`/api/readme-badge/USERNAME`) — iframes/scripts are blocked by GitHub
-- **embed.js** must use `defer` (not `async`) — async breaks `document.currentScript`
+- **embed.js** — put a container div **before** the script (see copy snippet on results page). Do not use `async`.
 
 ## Verify
 
