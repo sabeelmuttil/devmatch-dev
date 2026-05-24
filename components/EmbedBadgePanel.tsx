@@ -71,18 +71,19 @@ export function EmbedBadgePanel({
 
   const previewSrc = embedPageUrl(appUrl, username);
 
-  const handleCopy = useCallback(async (kind: SnippetKind) => {
-    const ok = await copyTextToClipboard(snippets[kind]);
-    if (ok) {
-      setCopied(kind);
-      window.setTimeout(() => setCopied(null), 2000);
-    }
-  }, [snippets]);
+  const handleCopy = useCallback(
+    async (kind: SnippetKind) => {
+      const ok = await copyTextToClipboard(snippets[kind]);
+      if (ok) {
+        setCopied(kind);
+        window.setTimeout(() => setCopied(null), 2000);
+      }
+    },
+    [snippets],
+  );
 
   return (
-    <div
-      className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 p-5 backdrop-blur-sm sm:p-6"
-    >
+    <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 p-5 backdrop-blur-sm sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -91,9 +92,10 @@ export function EmbedBadgePanel({
           <p
             className={`text-zinc-400 ${compact ? "mt-1 text-xs" : "mt-1 text-sm"}`}
           >
-            Use <strong className="text-zinc-300">HTML</strong> on your site; use{" "}
-            <strong className="text-zinc-300">GitHub README</strong> for profile
-            (GitHub blocks iframes).
+            Use <strong className="text-zinc-300">iframe</strong> or{" "}
+            <strong className="text-zinc-300">script (defer)</strong> on your
+            site. GitHub README only supports the image badge (no
+            iframe/script).
           </p>
         </div>
         <button

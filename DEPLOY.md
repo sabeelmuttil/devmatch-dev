@@ -20,17 +20,17 @@ Repo: https://github.com/sabeelmuttil/devmatch-dev
 
 In **Project → Settings → Environment Variables**, add:
 
-| Name | Required | Notes |
-|------|----------|--------|
-| `DAILY_DEV_PAT` | Yes | [daily.dev API settings](https://app.daily.dev/settings/api) |
-| `GEMINI_API_KEY` | Yes | [Google AI Studio](https://aistudio.google.com/apikey) |
-| `NEXT_PUBLIC_APP_URL` | Yes | Your live URL, e.g. `https://devmatch-dev.vercel.app` (no trailing slash) |
-| `UPSTASH_REDIS_REST_URL` | Yes† | From **Upstash Redis** (Vercel Storage) |
-| `UPSTASH_REDIS_REST_TOKEN` | Yes† | Same integration |
-| `REDIS_URL` | Yes† | Alternative: TCP URL from Storage (`rediss://...`) — supported |
-| `KV_REST_API_URL` | Yes† | If Vercel KV uses these names instead |
-| `KV_REST_API_TOKEN` | Yes† | Pair with `KV_REST_API_URL` |
-| `BLOB_READ_WRITE_TOKEN` | Yes† | Alternative: **Vercel Blob** (only need one storage option) |
+| Name                       | Required | Notes                                                                     |
+| -------------------------- | -------- | ------------------------------------------------------------------------- |
+| `DAILY_DEV_PAT`            | Yes      | [daily.dev API settings](https://app.daily.dev/settings/api)              |
+| `GEMINI_API_KEY`           | Yes      | [Google AI Studio](https://aistudio.google.com/apikey)                    |
+| `NEXT_PUBLIC_APP_URL`      | Yes      | Your live URL, e.g. `https://devmatch-dev.vercel.app` (no trailing slash) |
+| `UPSTASH_REDIS_REST_URL`   | Yes†     | From **Upstash Redis** (Vercel Storage)                                   |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes†     | Same integration                                                          |
+| `REDIS_URL`                | Yes†     | Alternative: TCP URL from Storage (`rediss://...`) — supported            |
+| `KV_REST_API_URL`          | Yes†     | If Vercel KV uses these names instead                                     |
+| `KV_REST_API_TOKEN`        | Yes†     | Pair with `KV_REST_API_URL`                                               |
+| `BLOB_READ_WRITE_TOKEN`    | Yes†     | Alternative: **Vercel Blob** (only need one storage option)               |
 
 †**Required on Vercel Production** for short `/s/abc123` links. Connect Storage → Production → redeploy.
 
@@ -63,18 +63,18 @@ npx vercel --prod
 
 That is enough — the app uses `REDIS_URL` for short links. You do **not** need to add REST vars manually unless `REDIS_URL` fails.
 
-1. Push latest code and **Redeploy** Production  
-2. Check: `https://devmatch-dev.vercel.app/api/share-storage`  
-   - Should show: `"configured": true`, `"redisUrl": true`  
-3. Optional write test: `https://devmatch-dev.vercel.app/api/share-storage?test=1`  
+1. Push latest code and **Redeploy** Production
+2. Check: `https://devmatch-dev.vercel.app/api/share-storage`
+   - Should show: `"configured": true`, `"redisUrl": true`
+3. Optional write test: `https://devmatch-dev.vercel.app/api/share-storage?test=1`
    - Should show: `"writeTest": { "ok": true, "backend": "redis" }`
 
 ### Optional: add REST vars (faster on serverless)
 
-1. Vercel → **Storage** (not Environment Variables) → click your Redis database  
-2. Open the **`.env` / Quickstart** tab  
-3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into **Environment Variables** → Production  
-4. Redeploy  
+1. Vercel → **Storage** (not Environment Variables) → click your Redis database
+2. Open the **`.env` / Quickstart** tab
+3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into **Environment Variables** → Production
+4. Redeploy
 
 ## SEO
 
@@ -94,7 +94,8 @@ After deploy, users can embed their Tech Identity:
 - Live badge: `https://YOUR_DOMAIN/embed/USERNAME`
 - Script: `<script src="https://YOUR_DOMAIN/embed.js" data-username="USERNAME" async></script>`
 - Copy snippets from the results page (**Embed on your site**)
-- **GitHub README** uses a PNG badge (`/api/readme-badge/USERNAME`) — iframes are blocked by GitHub
+- **GitHub README** uses a PNG badge (`/api/readme-badge/USERNAME`) — iframes/scripts are blocked by GitHub
+- **embed.js** must use `defer` (not `async`) — async breaks `document.currentScript`
 
 ## Verify
 

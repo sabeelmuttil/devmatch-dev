@@ -34,10 +34,12 @@ export function buildIframeSnippet(base: string, username: string): string {
 
 export function buildScriptSnippet(base: string, username: string): string {
   const origin = base.replace(/\/$/, "");
-  return `<script
+  // Use defer (not async) so document.currentScript works; embed.js also finds the tag as fallback.
+  return `<div id="dailydevmatch-${username}"></div>
+<script
   src="${origin}/embed.js"
   data-username="${username}"
-  async
+  defer
 ></script>`;
 }
 
