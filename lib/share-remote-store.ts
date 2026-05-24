@@ -2,10 +2,10 @@ import type { ShareCardPayload } from "@/lib/export-card-image";
 
 const TTL_SECONDS = 60 * 60 * 24;
 const BLOB_PATH = (id: string) => `share/${id}.json`;
+const SHARE_KEY = (id: string) => `share:${id}`;
 
 type UpstashRestCreds = { url: string; token: string };
 
-/** REST credentials — `REDIS_URL` (TCP) is not supported; use Upstash REST vars from Vercel Storage. */
 export function getUpstashRestCredentials(): UpstashRestCreds | null {
   const url = (
     process.env.UPSTASH_REDIS_REST_URL ??
@@ -18,25 +18,30 @@ export function getUpstashRestCredentials(): UpstashRestCreds | null {
     ""
   ).trim();
 
-  if (!url || !token) return null;
-  if (!url.startsWith("https://")) {
-    console.warn(
-      "[share-remote-store] Redis URL must be HTTPS REST (UPSTASH_REDIS_REST_URL), not TCP REDIS_URL",
-    );
-    return null;
-  }
+  if (!url || !token || !url.startsWith("https://")) return null;
   return { url, token };
 }
 
-function hasUpstash(): boolean {
+function getRedisUrl(): string | null {
+  const url = process.env.REDIS_URL?.trim();
+  return url && (url.startsWith("redis://") || url.startsWith("rediss://"))
+    ? url
+    : null;
+}
+
+function hasUpstashRest(): boolean {
   return getUpstashRestCredentials() !== null;
+}
+
+function hasRedisTcp(): boolean {
+  return getRedisUrl() !== null;
 }
 
 function hasBlob(): boolean {
   return !!process.env.BLOB_READ_WRITE_TOKEN?.trim();
 }
 
-async function saveUpstash(
+async function saveUpstashRest(
   id: string,
   payload: ShareCardPayload,
 ): Promise<boolean> {
@@ -45,24 +50,75 @@ async function saveUpstash(
   try {
     const { Redis } = await import("@upstash/redis");
     const redis = new Redis({ url: creds.url, token: creds.token });
-    await redis.set(`share:${id}`, payload, { ex: TTL_SECONDS });
-    const check = await redis.get<ShareCardPayload>(`share:${id}`);
-    return !!check;
+    await redis.set(SHARE_KEY(id), payload, { ex: TTL_SECONDS });
+    return !!(await redis.get<ShareCardPayload>(SHARE_KEY(id)));
   } catch (err) {
-    console.error("[share-remote-store] Upstash save failed:", err);
+    console.error("[share-remote-store] Upstash REST save failed:", err);
     return false;
   }
 }
 
-async function loadUpstash(id: string): Promise<ShareCardPayload | null> {
+async function loadUpstashRest(id: string): Promise<ShareCardPayload | null> {
   const creds = getUpstashRestCredentials();
   if (!creds) return null;
   try {
     const { Redis } = await import("@upstash/redis");
     const redis = new Redis({ url: creds.url, token: creds.token });
-    return (await redis.get<ShareCardPayload>(`share:${id}`)) ?? null;
+    return (await redis.get<ShareCardPayload>(SHARE_KEY(id))) ?? null;
   } catch (err) {
-    console.error("[share-remote-store] Upstash load failed:", err);
+    console.error("[share-remote-store] Upstash REST load failed:", err);
+    return null;
+  }
+}
+
+async function saveRedisTcp(
+  id: string,
+  payload: ShareCardPayload,
+): Promise<boolean> {
+  const url = getRedisUrl();
+  if (!url) return false;
+  try {
+    const { createClient } = await import("redis");
+    const client = createClient({
+      url,
+      socket: {
+        connectTimeout: 10_000,
+        reconnectStrategy: false,
+      },
+    });
+    client.on("error", (err) => {
+      console.error("[share-remote-store] REDIS_URL client error:", err);
+    });
+    await client.connect();
+    try {
+      await client.setEx(SHARE_KEY(id), TTL_SECONDS, JSON.stringify(payload));
+      const check = await client.get(SHARE_KEY(id));
+      return !!check;
+    } finally {
+      await client.disconnect();
+    }
+  } catch (err) {
+    console.error("[share-remote-store] REDIS_URL save failed:", err);
+    return false;
+  }
+}
+
+async function loadRedisTcp(id: string): Promise<ShareCardPayload | null> {
+  const url = getRedisUrl();
+  if (!url) return null;
+  try {
+    const { createClient } = await import("redis");
+    const client = createClient({ url });
+    await client.connect();
+    try {
+      const raw = await client.get(SHARE_KEY(id));
+      if (!raw) return null;
+      return JSON.parse(raw) as ShareCardPayload;
+    } finally {
+      await client.disconnect();
+    }
+  } catch (err) {
+    console.error("[share-remote-store] REDIS_URL load failed:", err);
     return null;
   }
 }
@@ -89,9 +145,9 @@ async function loadBlob(id: string): Promise<ShareCardPayload | null> {
   try {
     const { list } = await import("@vercel/blob");
     const { blobs } = await list({ prefix: BLOB_PATH(id), limit: 1 });
-    const url = blobs[0]?.url;
-    if (!url) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const blobUrl = blobs[0]?.url;
+    if (!blobUrl) return null;
+    const res = await fetch(blobUrl, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as ShareCardPayload;
   } catch (err) {
@@ -102,12 +158,12 @@ async function loadBlob(id: string): Promise<ShareCardPayload | null> {
 
 export type ShareStorageBackend = "redis" | "blob" | "local" | null;
 
-/** Persist share payload for short `/s/{id}` links (Vercel serverless). */
 export async function saveShareRemote(
   id: string,
   payload: ShareCardPayload,
 ): Promise<ShareStorageBackend> {
-  if (await saveUpstash(id, payload)) return "redis";
+  if (await saveUpstashRest(id, payload)) return "redis";
+  if (await saveRedisTcp(id, payload)) return "redis";
   if (await saveBlob(id, payload)) return "blob";
   return null;
 }
@@ -115,34 +171,56 @@ export async function saveShareRemote(
 export async function loadShareRemote(
   id: string,
 ): Promise<ShareCardPayload | null> {
-  const fromRedis = await loadUpstash(id);
-  if (fromRedis) return fromRedis;
+  const fromRest = await loadUpstashRest(id);
+  if (fromRest) return fromRest;
+  const fromTcp = await loadRedisTcp(id);
+  if (fromTcp) return fromTcp;
   return loadBlob(id);
 }
 
 export function isRemoteShareConfigured(): boolean {
-  return hasUpstash() || hasBlob();
+  return hasUpstashRest() || hasRedisTcp() || hasBlob();
 }
 
-/** Safe for API responses — booleans only, no secrets. */
 export function shareStorageEnvStatus(): {
-  redis: boolean;
+  redisRest: boolean;
+  redisUrl: boolean;
   blob: boolean;
 } {
-  return { redis: hasUpstash(), blob: hasBlob() };
+  return {
+    redisRest: hasUpstashRest(),
+    redisUrl: hasRedisTcp(),
+    blob: hasBlob(),
+  };
 }
 
 export function shareStorageSetupMessage(): string {
   return (
-    "Short share links need Upstash Redis REST on Vercel. Storage → Upstash Redis → " +
-    "connect to Production — needs UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN " +
-    "(REDIS_URL alone does not work). Then redeploy."
+    "Short share links need Redis on Vercel Production. Connect Upstash Redis in Storage " +
+    "(UPSTASH_REDIS_REST_URL + TOKEN, or REDIS_URL from the integration), then redeploy."
   );
 }
 
 export function shareStorageSaveFailedMessage(): string {
   return (
-    "Storage env vars are set but saving failed. Check Vercel function logs, " +
-    "confirm REST URL starts with https://, then redeploy."
+    "REDIS_URL is set but saving failed. Open /api/share-storage?test=1 on your site to debug, " +
+    "or add UPSTASH_REDIS_REST_URL + TOKEN from Vercel Storage → your Redis → .env tab."
   );
+}
+
+/** Smoke test for /api/share-storage?test=1 */
+export async function testShareStorageWrite(): Promise<{
+  ok: boolean;
+  backend: ShareStorageBackend;
+}> {
+  const id = `health${Date.now().toString(36).slice(-8)}`;
+  const payload = {
+    name: "Health Check",
+    persona: "Test",
+    skills: ["test"],
+  } as import("@/lib/export-card-image").ShareCardPayload;
+  const backend = await saveShareRemote(id, payload);
+  if (!backend) return { ok: false, backend: null };
+  const loaded = await loadShareRemote(id);
+  return { ok: !!loaded, backend };
 }

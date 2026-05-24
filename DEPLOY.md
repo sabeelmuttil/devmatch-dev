@@ -25,13 +25,14 @@ In **Project → Settings → Environment Variables**, add:
 | `DAILY_DEV_PAT` | Yes | [daily.dev API settings](https://app.daily.dev/settings/api) |
 | `GEMINI_API_KEY` | Yes | [Google AI Studio](https://aistudio.google.com/apikey) |
 | `NEXT_PUBLIC_APP_URL` | Yes | Your live URL, e.g. `https://devmatch-dev.vercel.app` (no trailing slash) |
-| `UPSTASH_REDIS_REST_URL` | Yes† | From **Upstash Redis** ([Vercel Storage](https://vercel.com/marketplace?category=storage&search=redis)) |
+| `UPSTASH_REDIS_REST_URL` | Yes† | From **Upstash Redis** (Vercel Storage) |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes† | Same integration |
-| `KV_REST_API_URL` | Yes† | Alternative names if you use **Vercel KV** instead of Upstash-branded vars |
+| `REDIS_URL` | Yes† | Alternative: TCP URL from Storage (`rediss://...`) — supported |
+| `KV_REST_API_URL` | Yes† | If Vercel KV uses these names instead |
 | `KV_REST_API_TOKEN` | Yes† | Pair with `KV_REST_API_URL` |
-| `BLOB_READ_WRITE_TOKEN` | Yes† | Alternative: **Vercel Blob** storage (only need one of Redis or Blob) |
+| `BLOB_READ_WRITE_TOKEN` | Yes† | Alternative: **Vercel Blob** (only need one storage option) |
 
-†**Required on Vercel Production** for short `/s/abc123` links (~55 chars). Do **not** use `REDIS_URL` (TCP) — use the **REST** pair from Storage. Local dev uses in-memory short IDs; long token URLs are dev-only fallback.
+†**Required on Vercel Production** for short `/s/abc123` links. Connect Storage → Production → redeploy.
 
 **“Sensitive” in Vercel:** That only hides values in the dashboard. **Non-sensitive is fine** — serverless functions can still read them. What matters: variables are enabled for **Production** and you **redeploy** after adding storage.
 
@@ -57,6 +58,23 @@ npx vercel env add GEMINI_API_KEY
 npx vercel env add NEXT_PUBLIC_APP_URL
 npx vercel --prod
 ```
+
+## Only have `REDIS_URL`? (like your Vercel screenshot)
+
+That is enough — the app uses `REDIS_URL` for short links. You do **not** need to add REST vars manually unless `REDIS_URL` fails.
+
+1. Push latest code and **Redeploy** Production  
+2. Check: `https://devmatch-dev.vercel.app/api/share-storage`  
+   - Should show: `"configured": true`, `"redisUrl": true`  
+3. Optional write test: `https://devmatch-dev.vercel.app/api/share-storage?test=1`  
+   - Should show: `"writeTest": { "ok": true, "backend": "redis" }`
+
+### Optional: add REST vars (faster on serverless)
+
+1. Vercel → **Storage** (not Environment Variables) → click your Redis database  
+2. Open the **`.env` / Quickstart** tab  
+3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into **Environment Variables** → Production  
+4. Redeploy  
 
 ## Verify
 

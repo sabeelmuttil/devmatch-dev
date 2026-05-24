@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { avatarFallbackUrl } from "@/lib/avatar";
+import { avatarFallbackUrl, resolveAvatarUrl } from "@/lib/avatar";
 
 function initialsFrom(name: string): string {
   return (
@@ -95,7 +95,7 @@ export function Avatar({
 }: AvatarProps) {
   const seed = username?.trim() || name.trim() || "developer";
   const fallback = useMemo(() => avatarFallbackUrl(seed), [seed]);
-  const intendedSrc = src?.trim() || fallback;
+  const intendedSrc = useMemo(() => resolveAvatarUrl(src, seed), [src, seed]);
 
   return (
     <AvatarImage
