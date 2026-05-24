@@ -206,30 +206,6 @@ export function websiteJsonLd(): Record<string, unknown> {
         inLanguage: "en-US",
         publisher: { "@id": organizationId },
       },
-      {
-        "@type": "SoftwareApplication",
-        "@id": `${siteUrl}/#software`,
-        name: SITE_NAME,
-        url: siteUrl,
-        applicationCategory: "DeveloperApplication",
-        applicationSubCategory: "Developer matchmaking",
-        operatingSystem: "Web browser",
-        description: DEFAULT_DESCRIPTION,
-        offers: {
-          "@type": "Offer",
-          price: "0",
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-        },
-        featureList: [
-          "Tech DNA analysis from daily.dev profile",
-          "AI developer persona",
-          "Compatible developer matches",
-          "Shareable Tech Identity card",
-        ],
-        screenshot: absoluteUrl(defaultOgImage),
-        publisher: { "@id": organizationId },
-      },
     ],
   };
 }
