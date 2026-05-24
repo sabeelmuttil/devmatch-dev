@@ -154,16 +154,19 @@ export function ShareCard({
       .catch((err) => {
         if (!cancelled) {
           console.warn("[ShareCard] share URL build failed:", err);
-          try {
-            setShareUrls({
-              ...shareUrlsFromToken(serverPayload, origin),
-              storage: "token",
-            });
-            setLoadedPublishKey(key);
-          } catch {
+          if (process.env.NODE_ENV === "development") {
+            try {
+              setShareUrls({
+                ...shareUrlsFromToken(serverPayload, origin),
+                storage: "token",
+              });
+            } catch {
+              setShareUrls(null);
+            }
+          } else {
             setShareUrls(null);
-            setLoadedPublishKey(key);
           }
+          setLoadedPublishKey(key);
         }
       });
 

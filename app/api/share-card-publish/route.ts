@@ -1,5 +1,6 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { renderShareCardImage } from "@/lib/share-card-og";
+import { isVercelProduction } from "@/lib/share-env";
 import { publishShareCardShort } from "@/lib/share-publish-store";
 import {
   decodeShareToken,
@@ -25,7 +26,7 @@ function originFromRequest(request: Request): string {
   );
 }
 
-/** POST — short link when storage exists; otherwise stateless token (always works). */
+/** POST — short `/s/{id}` on Vercel Production when Redis/Blob is connected. */
 export async function POST(request: Request) {
   let body: ShareCardPayload;
   try {
@@ -52,10 +53,26 @@ export async function POST(request: Request) {
     });
   }
 
+  const isProd = isVercelProduction();
+  const env = shareStorageEnvStatus();
+
+  if (isProd) {
+    const message = isRemoteShareConfigured()
+      ? shareStorageSaveFailedMessage()
+      : shareStorageSetupMessage();
+    return NextResponse.json(
+      {
+        error: message,
+        storage: "none",
+        storageEnv: env,
+      },
+      { status: 503 },
+    );
+  }
+
   const token = encodeShareToken(body, { forPublicUrl: true });
   const urls = shareUrlsForId(origin, token);
 
-  const env = shareStorageEnvStatus();
   return NextResponse.json({
     id: null,
     storage: "token",

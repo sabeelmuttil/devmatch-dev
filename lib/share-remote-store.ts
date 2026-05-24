@@ -3,29 +3,51 @@ import type { ShareCardPayload } from "@/lib/export-card-image";
 const TTL_SECONDS = 60 * 60 * 24;
 const BLOB_PATH = (id: string) => `share/${id}.json`;
 
-/** Upstash integration or Vercel KV (`KV_REST_API_*`) — both work with `Redis.fromEnv()`. */
+type UpstashRestCreds = { url: string; token: string };
+
+/** REST credentials — `REDIS_URL` (TCP) is not supported; use Upstash REST vars from Vercel Storage. */
+export function getUpstashRestCredentials(): UpstashRestCreds | null {
+  const url = (
+    process.env.UPSTASH_REDIS_REST_URL ??
+    process.env.KV_REST_API_URL ??
+    ""
+  ).trim();
+  const token = (
+    process.env.UPSTASH_REDIS_REST_TOKEN ??
+    process.env.KV_REST_API_TOKEN ??
+    ""
+  ).trim();
+
+  if (!url || !token) return null;
+  if (!url.startsWith("https://")) {
+    console.warn(
+      "[share-remote-store] Redis URL must be HTTPS REST (UPSTASH_REDIS_REST_URL), not TCP REDIS_URL",
+    );
+    return null;
+  }
+  return { url, token };
+}
+
 function hasUpstash(): boolean {
-  return !!(
-    (process.env.UPSTASH_REDIS_REST_URL &&
-      process.env.UPSTASH_REDIS_REST_TOKEN) ||
-    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
-  );
+  return getUpstashRestCredentials() !== null;
 }
 
 function hasBlob(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN;
+  return !!process.env.BLOB_READ_WRITE_TOKEN?.trim();
 }
 
 async function saveUpstash(
   id: string,
   payload: ShareCardPayload,
 ): Promise<boolean> {
-  if (!hasUpstash()) return false;
+  const creds = getUpstashRestCredentials();
+  if (!creds) return false;
   try {
     const { Redis } = await import("@upstash/redis");
-    const redis = Redis.fromEnv();
+    const redis = new Redis({ url: creds.url, token: creds.token });
     await redis.set(`share:${id}`, payload, { ex: TTL_SECONDS });
-    return true;
+    const check = await redis.get<ShareCardPayload>(`share:${id}`);
+    return !!check;
   } catch (err) {
     console.error("[share-remote-store] Upstash save failed:", err);
     return false;
@@ -33,10 +55,11 @@ async function saveUpstash(
 }
 
 async function loadUpstash(id: string): Promise<ShareCardPayload | null> {
-  if (!hasUpstash()) return null;
+  const creds = getUpstashRestCredentials();
+  if (!creds) return null;
   try {
     const { Redis } = await import("@upstash/redis");
-    const redis = Redis.fromEnv();
+    const redis = new Redis({ url: creds.url, token: creds.token });
     return (await redis.get<ShareCardPayload>(`share:${id}`)) ?? null;
   } catch (err) {
     console.error("[share-remote-store] Upstash load failed:", err);
@@ -111,14 +134,15 @@ export function shareStorageEnvStatus(): {
 
 export function shareStorageSetupMessage(): string {
   return (
-    "Short share links need storage on Vercel. In your project go to Storage → " +
-    "add Upstash Redis or Vercel Blob, connect to Production, then redeploy."
+    "Short share links need Upstash Redis REST on Vercel. Storage → Upstash Redis → " +
+    "connect to Production — needs UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN " +
+    "(REDIS_URL alone does not work). Then redeploy."
   );
 }
 
 export function shareStorageSaveFailedMessage(): string {
   return (
-    "Storage env vars are present but saving the share card failed. " +
-    "Open Vercel → Deployments → latest → Functions logs, then redeploy after fixing Redis/Blob."
+    "Storage env vars are set but saving failed. Check Vercel function logs, " +
+    "confirm REST URL starts with https://, then redeploy."
   );
 }

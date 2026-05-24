@@ -61,14 +61,19 @@ export async function publishShareCardImage(
   if (!res.ok) {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
-    if (origin) {
+    const devFallback =
+      process.env.NODE_ENV === "development" && origin && res.status !== 503;
+    if (devFallback) {
       return {
         ...shareUrlsFromToken(payload, origin),
         storage: "token",
         storageHint: data.error,
       };
     }
-    throw new Error(data.error ?? `Publish failed (${res.status})`);
+    throw new Error(
+      data.error ??
+        `Share link failed (${res.status}). Add Upstash Redis REST vars on Vercel Production and redeploy.`,
+    );
   }
 
   const pageUrl = data.pageUrl ?? data.imageUrlShort;

@@ -31,7 +31,7 @@ In **Project → Settings → Environment Variables**, add:
 | `KV_REST_API_TOKEN` | Yes† | Pair with `KV_REST_API_URL` |
 | `BLOB_READ_WRITE_TOKEN` | Yes† | Alternative: **Vercel Blob** storage (only need one of Redis or Blob) |
 
-†**Required for short** `/s/abc123` links. Without storage, the app still works using longer token URLs.
+†**Required on Vercel Production** for short `/s/abc123` links (~55 chars). Do **not** use `REDIS_URL` (TCP) — use the **REST** pair from Storage. Local dev uses in-memory short IDs; long token URLs are dev-only fallback.
 
 **“Sensitive” in Vercel:** That only hides values in the dashboard. **Non-sensitive is fine** — serverless functions can still read them. What matters: variables are enabled for **Production** and you **redeploy** after adding storage.
 
