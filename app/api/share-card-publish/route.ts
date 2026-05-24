@@ -37,9 +37,10 @@ export async function POST(request: Request) {
   const origin = originFromRequest(request);
   const shortId = await publishShareCardShort(body);
   const remoteStorage = await saveShareRemote(shortId, body);
-  const useShortId = !remoteStorage;
+  const useLocalShortId =
+    !remoteStorage && process.env.NODE_ENV === "development";
 
-  if (remoteStorage || useShortId) {
+  if (remoteStorage || useLocalShortId) {
     const urls = shareUrlsForId(origin, shortId);
     return NextResponse.json({
       id: shortId,

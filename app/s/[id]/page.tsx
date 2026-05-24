@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 
 type PageProps = { params: Promise<{ id: string }> };
 
+/** In-app card width — PNG is 1080px but displayed at UI scale. */
+const SHARE_CARD_DISPLAY_WIDTH = 360;
+
 function originFromEnv(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
@@ -59,43 +62,34 @@ export default async function ShareCardViewPage({ params }: PageProps) {
   const src = pngPath(id);
 
   return (
-    <main
-      style={{
-        margin: 0,
-        minHeight: "100dvh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        justifyContent: "center",
-        background: "#06060b",
-        padding: "12px 0",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt="Tech Identity Card"
-        style={{
-          width: "100%",
-          maxWidth: "100%",
-          height: "auto",
-          display: "block",
-          objectFit: "contain",
-        }}
-      />
-      <p
-        style={{
-          marginTop: 16,
-          fontFamily: "system-ui, sans-serif",
-          fontSize: 12,
-          color: "#71717a",
-          textAlign: "center",
-        }}
-      >
-        dailydevmatch.dev · #dailydevhackathon
-      </p>
-    </main>
+    <div className="share-view-root">
+      <div className="share-view-bg" aria-hidden>
+        <div className="share-view-bg__grid grid-bg" />
+        <div className="share-view-blob share-view-blob--violet" />
+        <div className="share-view-blob share-view-blob--cyan" />
+        <div className="share-view-blob share-view-blob--pink" />
+        <div className="share-view-bg__vignette" />
+      </div>
+
+      <main className="share-view-content">
+        <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-300">
+          dailydevmatch.dev
+        </p>
+
+        <div className="share-view-card-wrap glow-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt="Tech Identity Card"
+            width={SHARE_CARD_DISPLAY_WIDTH}
+            className="share-view-card"
+          />
+        </div>
+
+        <p className="mt-5 text-center text-xs text-zinc-500">
+          #dailydevhackathon
+        </p>
+      </main>
+    </div>
   );
 }

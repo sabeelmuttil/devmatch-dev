@@ -47,7 +47,7 @@ function normalizeSkills(
   return [list[0], list[1], list[2]];
 }
 
-/** Satori needs extra height — underestimating clips the footer / top match. */
+/** Canvas height for Satori — tight fit to avoid empty space below the footer. */
 function computeShareCardHeight(input: {
   descriptionLen: number;
   dnaCount: number;
@@ -58,32 +58,32 @@ function computeShareCardHeight(input: {
   const border = S * 6;
   const header = S * 68;
   const profileRow = S * 92;
-  const personaBox = S * 88;
 
   const descChars = Math.min(input.descriptionLen, 280);
-  const descLines = descChars > 0 ? Math.max(1, Math.ceil(descChars / 42)) : 0;
-  const personaDesc = descLines * S * 20;
+  const descLines = descChars > 0 ? Math.max(1, Math.ceil(descChars / 48)) : 0;
+  const personaBlock = S * (descLines > 0 ? 80 : 68) + descLines * S * 17;
 
-  const dna = input.dnaCount > 0 ? S * (36 + input.dnaCount * 34) : 0;
-  const stack = S * 100;
+  const dna = input.dnaCount > 0 ? S * (32 + input.dnaCount * 34) : 0;
+  const stack = S * 96;
   const tagRows =
     input.tagCount > 0 ? Math.max(1, Math.ceil(input.tagCount / 3)) : 0;
-  const tags = tagRows > 0 ? S * (44 + tagRows * 32) : 0;
+  const tags = tagRows > 0 ? S * (40 + tagRows * 30) : 0;
 
-  const reasonLines = input.hasTopMatch
-    ? Math.max(1, Math.ceil(Math.min(input.matchReasonLen, 140) / 48))
+  const reasonChars = input.hasTopMatch
+    ? Math.min(input.matchReasonLen, 120)
     : 0;
-  const topMatch = input.hasTopMatch ? S * (100 + reasonLines * 18) : 0;
+  const reasonLines =
+    reasonChars > 0 ? Math.max(1, Math.ceil(reasonChars / 52)) : 0;
+  const topMatch = input.hasTopMatch ? S * (84 + reasonLines * 16) : 0;
 
-  const footer = S * 60;
-  const safety = S * 40;
+  const footer = S * 52;
+  const safety = S * 8;
 
   return (
     border * 2 +
     header +
     profileRow +
-    personaBox +
-    personaDesc +
+    personaBlock +
     dna +
     stack +
     tags +
@@ -775,7 +775,8 @@ export function renderTwitterPreviewImage(
         display: "flex",
         width: TWITTER_W,
         height: TWITTER_H,
-        background: "linear-gradient(135deg, #1a0a2e 0%, #06060b 45%, #0a1628 100%)",
+        background:
+          "linear-gradient(135deg, #1a0a2e 0%, #06060b 45%, #0a1628 100%)",
         fontFamily:
           "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
         padding: 48,
@@ -794,7 +795,9 @@ export function renderTwitterPreviewImage(
           gap: 36,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: 24, flex: 1 }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div
               style={{
@@ -824,9 +827,7 @@ export function renderTwitterPreviewImage(
               >
                 DAILYDEVMATCH.DEV
               </div>
-              <div
-                style={{ display: "flex", fontSize: 12, color: "#71717a" }}
-              >
+              <div style={{ display: "flex", fontSize: 12, color: "#71717a" }}>
                 Tech Identity Card
               </div>
             </div>

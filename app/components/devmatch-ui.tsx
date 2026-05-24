@@ -213,7 +213,13 @@ export function LandingView({
   );
 }
 
-export function LoadingView({ step }: { step: number }) {
+export function LoadingView({
+  step,
+  username,
+}: {
+  step: number;
+  username?: string;
+}) {
   const [codeIndex, setCodeIndex] = React.useState(0);
 
   React.useEffect(() => {
@@ -286,6 +292,11 @@ export function LoadingView({ step }: { step: number }) {
           </div>
 
           <div className="mt-10 text-center">
+            {username ? (
+              <p className="mb-2 font-mono text-sm text-cyan-400/90">
+                @{username}
+              </p>
+            ) : null}
             <p className="text-lg font-medium text-white">
               {LOADING_STEPS[Math.min(step, LOADING_STEPS.length - 1)]}
               <span className="inline-block w-8 text-left text-cyan-400">
@@ -389,7 +400,7 @@ export function ResultsView({
             onClick={onReset}
             className="self-start rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-violet-500/40 hover:text-white sm:self-center"
           >
-            New match
+            New search
           </button>
         </div>
 

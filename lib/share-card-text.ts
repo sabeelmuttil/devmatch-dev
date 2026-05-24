@@ -1,12 +1,14 @@
-/** X counts URLs as ~23 chars; keep total tweet body within limit. */
-export const X_TWEET_MAX = 275;
+/** X/Twitter post limit */
+export const X_TWEET_MAX = 280;
 
 export interface ShareTweetInput {
   name: string;
   username?: string;
   persona: string;
+  personaDescription?: string;
   skills: string[];
   appUrl: string;
+  pageUrl?: string;
 }
 
 function truncate(text: string, max: number): string {
@@ -15,21 +17,29 @@ function truncate(text: string, max: number): string {
 }
 
 /**
- * Tweet body (no URL) — card link is passed via X intent `url` so the full link is not truncated.
+ * Tweet with identity copy and card link in the body (plus `url` param for X preview).
  */
 export function buildXTweetText(input: ShareTweetInput): string {
   const skills = input.skills.filter((s) => s && s !== "—").slice(0, 3);
-  const skillPart = skills.length > 0 ? ` · ${skills.join(" · ")}` : "";
+  const skillLine = skills.length > 0 ? `\n${skills.join(" · ")}` : "";
   const handle = input.username ? ` @${input.username}` : "";
-  const hashtag = "#dailydevhackathon";
-  const suffix = `\n\n${hashtag}`;
-  const bodyBudget = X_TWEET_MAX - suffix.length;
+  const desc = input.personaDescription?.trim();
+  const descPart = desc
+    ? `\n${truncate(desc.replace(/\s+/g, " "), 100)}`
+    : "";
+  const link = (
+    input.pageUrl?.trim() || input.appUrl.replace(/\/$/, "")
+  ).trim();
+  const hashtag = "\n\n#dailydevhackathon";
+  const linkPart = link ? `\n\n${link}` : "";
+  const suffix = `${linkPart}${hashtag}`;
 
-  let body = `My Tech Identity: ${truncate(input.persona, 48)}${skillPart}${handle}`;
-  if (body.length > bodyBudget) {
+  let body = `My Tech Identity: ${truncate(input.persona, 48)}${handle}${descPart}${skillLine}`;
+  const maxBody = X_TWEET_MAX - suffix.length;
+  if (body.length > maxBody) {
     body = truncate(
-      `My Tech Identity: ${truncate(input.persona, 32)}${skillPart}`,
-      bodyBudget,
+      `My Tech Identity: ${truncate(input.persona, 36)}${handle}${skillLine}`,
+      maxBody,
     );
   }
 

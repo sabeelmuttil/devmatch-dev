@@ -2,8 +2,6 @@
 
 import { Avatar } from "@/components/Avatar";
 import {
-  captureCardBlob,
-  downloadBlob,
   type DnaEntry,
   type ShareCardPayload,
   type TopMatchEntry,
@@ -14,9 +12,9 @@ import {
   type PublishedShareUrls,
 } from "@/lib/publish-share-card";
 import { shareUrlsFromToken } from "@/lib/share-url";
-import { buildXIntentUrl, buildXTweetText } from "@/lib/share-card-text";
-import { copyPngToClipboard, copyTextToClipboard } from "@/lib/share-clipboard";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ShareModal } from "@/components/ShareModal";
+import { useClientOrigin } from "@/lib/use-client-origin";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface ShareCardProps {
   name: string;
@@ -57,34 +55,12 @@ function normalizeSkills(
   return [padded[0], padded[1], padded[2]];
 }
 
-function slugify(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "dev"
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
+function ShareIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
       viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-
-function DownloadIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
       fill="none"
-      viewBox="0 0 24 24"
       stroke="currentColor"
       strokeWidth={2}
       aria-hidden
@@ -92,7 +68,7 @@ function DownloadIcon({ className }: { className?: string }) {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
       />
     </svg>
   );
@@ -112,24 +88,19 @@ export function ShareCard({
   className = "",
 }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const shareOnXLock = useRef(false);
-  const [exporting, setExporting] = useState<"png" | "jpeg" | "x" | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
-  const [shareHint, setShareHint] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const clientOrigin = useClientOrigin(DEFAULT_APP_URL);
 
   const topSkills = normalizeSkills(skills);
-  const shareAppUrl =
-    appUrl ??
-    (typeof window !== "undefined" ? window.location.origin : DEFAULT_APP_URL);
+  const shareAppUrl = appUrl ?? clientOrigin;
   const handle = username ? `@${username}` : null;
   const dnaBars = useMemo(() => techDna.slice(0, 6), [techDna]);
   const displayTags = useMemo(() => tags.filter(Boolean).slice(0, 6), [tags]);
 
-  const techDnaKey = techDna
-    .slice(0, 6)
-    .map((d) => `${d.label}:${d.value}`)
-    .join("|");
-  const tagsKey = tags.filter(Boolean).slice(0, 6).join("|");
+  const skillsForPayload = useMemo(
+    () => normalizeSkills(skills).filter((s) => s !== "—"),
+    [skills],
+  );
 
   const serverPayload = useMemo<ShareCardPayload>(
     () => ({
@@ -138,7 +109,7 @@ export function ShareCard({
       avatar,
       persona,
       personaDescription,
-      skills: topSkills.filter((s) => s !== "—"),
+      skills: skillsForPayload,
       techDna: dnaBars,
       tags: displayTags,
       topMatch,
@@ -149,29 +120,36 @@ export function ShareCard({
       avatar,
       persona,
       personaDescription,
-      topSkills[0],
-      topSkills[1],
-      topSkills[2],
-      techDnaKey,
-      tagsKey,
-      topMatch?.name,
-      topMatch?.username,
-      topMatch?.matchScore,
-      topMatch?.matchReason,
+      skillsForPayload,
+      dnaBars,
+      displayTags,
+      topMatch,
     ],
   );
 
+  const publishKey = useMemo(
+    () => JSON.stringify(serverPayload),
+    [serverPayload],
+  );
+
   const [shareUrls, setShareUrls] = useState<PublishedShareUrls | null>(null);
-  const [shareLinkLoading, setShareLinkLoading] = useState(true);
+  const [loadedPublishKey, setLoadedPublishKey] = useState<string | null>(null);
+
+  const shareLinkLoading = loadedPublishKey !== publishKey;
+  const activeShareUrls =
+    loadedPublishKey === publishKey ? shareUrls : null;
 
   useEffect(() => {
     let cancelled = false;
-    const origin = window.location.origin;
+    const origin = clientOrigin;
+    const key = publishKey;
 
-    setShareLinkLoading(true);
-    publishShareCardImageCached(serverPayload)
+    void publishShareCardImageCached(serverPayload)
       .then((urls) => {
-        if (!cancelled) setShareUrls(urls);
+        if (!cancelled) {
+          setShareUrls(urls);
+          setLoadedPublishKey(key);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -181,144 +159,43 @@ export function ShareCard({
               ...shareUrlsFromToken(serverPayload, origin),
               storage: "token",
             });
+            setLoadedPublishKey(key);
           } catch {
             setShareUrls(null);
+            setLoadedPublishKey(key);
           }
         }
-      })
-      .finally(() => {
-        if (!cancelled) setShareLinkLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [serverPayload]);
+  }, [serverPayload, publishKey, clientOrigin]);
 
-  const displayAvatarSrc = useMemo(() => {
-    if (typeof window === "undefined") return avatar ?? undefined;
-    return proxiedAvatarUrl(window.location.origin, avatar, username ?? name);
-  }, [avatar, username, name]);
+  const displayAvatarSrc = useMemo(
+    () => proxiedAvatarUrl(clientOrigin, avatar, username ?? name),
+    [clientOrigin, avatar, username, name],
+  );
 
   const tweetInput = useMemo(
     () => ({
       name,
       username,
       persona,
-      skills: topSkills.filter((s) => s !== "—"),
+      personaDescription,
+      skills: skillsForPayload,
       appUrl: shareAppUrl,
+      pageUrl: activeShareUrls?.pageUrl,
     }),
-    [name, username, persona, topSkills, shareAppUrl],
-  );
-
-  const handleShareOnX = useCallback(() => {
-    const node = cardRef.current;
-    if (!node || shareOnXLock.current) return;
-
-    shareOnXLock.current = true;
-    setExporting("x");
-    setExportError(null);
-    setShareHint(null);
-
-    const filename = `tech-identity-${slugify(username ?? name)}.png`;
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : shareAppUrl;
-    const pageUrl = shareUrls?.pageUrl ?? "";
-    if (!pageUrl) {
-      shareOnXLock.current = false;
-      setExporting(null);
-      setExportError(
-        shareLinkLoading
-          ? "Share link is still loading — wait a moment and try again."
-          : "Could not create share link — refresh and try again.",
-      );
-      return;
-    }
-    const tweetText = buildXTweetText(tweetInput);
-    const xUrl = buildXIntentUrl({
-      text: tweetText,
-      pageUrl: pageUrl || undefined,
-      appUrl: shareAppUrl,
-    });
-
-    // Must open X in the same click tick — async window.open is blocked as a popup.
-    const xWindow = window.open(
-      xUrl,
-      "_blank",
-      "noopener,noreferrer",
-    );
-
-    if (!xWindow) {
-      shareOnXLock.current = false;
-      setExporting(null);
-      setShareHint(
-        "Could not open X. Allow pop-ups for this site, then try again.",
-      );
-      return;
-    }
-
-    void (async () => {
-      try {
-        const blob = await captureCardBlob(node, "png", serverPayload, {
-          preferClient: true,
-        });
-        const copiedImage = await copyPngToClipboard(blob);
-        if (!copiedImage) downloadBlob(blob, filename);
-
-        setShareHint(
-          copiedImage
-            ? "X is open with your full card link attached. PNG copied — paste with ⌘V / Ctrl+V for the image."
-            : "X is open with your full card link attached. Use the downloaded PNG or copy the link below.",
-        );
-      } catch (err) {
-        console.error("[ShareCard] share prep failed:", err);
-        setShareHint(
-          "X is open. Card image copy failed — use the image link in your tweet.",
-        );
-      } finally {
-        shareOnXLock.current = false;
-        setExporting(null);
-      }
-    })();
-  }, [
-    username,
-    name,
-    serverPayload,
-    tweetInput,
-    shareAppUrl,
-    shareUrls,
-    shareLinkLoading,
-  ]);
-
-  const downloadCard = useCallback(
-    async (format: "png" | "jpeg") => {
-      const node = cardRef.current;
-      if (!node) return;
-
-      setExporting(format);
-      setExportError(null);
-      setShareHint(null);
-
-      try {
-        const blob = await captureCardBlob(node, format, serverPayload, {
-          preferClient: true,
-        });
-        downloadBlob(
-          blob,
-          `tech-identity-${slugify(username ?? name)}.${format}`,
-        );
-      } catch (err) {
-        console.error("[ShareCard] export failed:", err);
-        setExportError(
-          err instanceof Error
-            ? err.message
-            : "Could not export image. Try again in a moment.",
-        );
-      } finally {
-        setExporting(null);
-      }
-    },
-    [name, username, serverPayload],
+    [
+      name,
+      username,
+      persona,
+      personaDescription,
+      skillsForPayload,
+      shareAppUrl,
+      activeShareUrls?.pageUrl,
+    ],
   );
 
   return (
@@ -539,88 +416,30 @@ export function ShareCard({
         </div>
       </div>
 
-      {exportError && (
-        <p className="max-w-[360px] text-center text-xs text-red-300">
-          {exportError}
-        </p>
-      )}
-      {shareHint && !exportError && (
-        <p className="max-w-[360px] text-center text-xs text-cyan-300/90">
-          {shareHint}
-        </p>
-      )}
+      <button
+        type="button"
+        onClick={() => setShareOpen(true)}
+        className="group flex w-full max-w-[360px] items-center justify-center gap-2.5 rounded-xl border border-violet-400/30 bg-gradient-to-r from-violet-600/25 to-cyan-600/20 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-950/40 transition-all hover:border-violet-400/50 hover:from-violet-600/35 hover:to-cyan-600/30 active:scale-[0.98]"
+      >
+        <ShareIcon className="h-4 w-4 text-violet-200 group-hover:text-white" />
+        {shareLinkLoading ? "Preparing share…" : "Share"}
+      </button>
 
-      <div className="flex w-full max-w-[360px] flex-col gap-2">
-        <button
-          type="button"
-          disabled={!!exporting || shareLinkLoading || !shareUrls}
-          onClick={handleShareOnX}
-          className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-gradient-to-r from-zinc-900 to-zinc-800 px-5 py-3.5 text-sm font-semibold text-white transition-all hover:border-white/25 hover:from-zinc-800 hover:to-zinc-700 active:scale-[0.98] disabled:opacity-50"
-        >
-          <XIcon className="h-4 w-4 text-zinc-300 group-hover:text-white" />
-          {exporting === "x"
-            ? "Preparing card…"
-            : shareLinkLoading || !shareUrls
-              ? "Preparing link…"
-              : "Share on X"}
-        </button>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={!!exporting}
-            onClick={() => downloadCard("png")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 transition-all hover:bg-cyan-500/20 disabled:opacity-50"
-          >
-            <DownloadIcon className="h-4 w-4" />
-            {exporting === "png" ? "Saving…" : "Download PNG"}
-          </button>
-          <button
-            type="button"
-            disabled={!!exporting}
-            onClick={() => downloadCard("jpeg")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition-all hover:bg-violet-500/20 disabled:opacity-50"
-          >
-            <DownloadIcon className="h-4 w-4" />
-            {exporting === "jpeg" ? "Saving…" : "Download JPEG"}
-          </button>
-        </div>
-
-        {shareUrls ? (
-          <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-              Share link (opens full screen)
-              {shareUrls.storage === "token" ? " · add Vercel Storage for shorter links" : ""}
-            </p>
-            {shareUrls.storageHint && shareUrls.storage === "token" ? (
-              <p className="mb-2 text-[10px] leading-relaxed text-amber-400/90">
-                {shareUrls.storageHint}
-              </p>
-            ) : null}
-            <p className="break-all font-mono text-[11px] leading-relaxed text-cyan-300/90">
-              {shareUrls.pageUrl}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void copyTextToClipboard(shareUrls.pageUrl).then((ok) => {
-                  setShareHint(
-                    ok ? "Card link copied to clipboard." : "Could not copy link.",
-                  );
-                });
-              }}
-              className="mt-2 text-[10px] font-medium text-violet-300 hover:text-violet-200"
-            >
-              Copy link
-            </button>
-          </div>
-        ) : null}
-
-        <p className="text-center text-[10px] leading-relaxed text-zinc-600">
-          Opens X with your share page link (preview image on X). PNG is copied
-          so you can paste the full card into the composer.
-        </p>
-      </div>
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        cardRef={cardRef}
+        serverPayload={serverPayload}
+        name={name}
+        username={username}
+        persona={persona}
+        personaDescription={personaDescription}
+        skills={topSkills.filter((s) => s !== "—")}
+        appUrl={shareAppUrl}
+        shareUrls={activeShareUrls}
+        shareLinkLoading={shareLinkLoading}
+        tweetInput={tweetInput}
+      />
     </div>
   );
 }
