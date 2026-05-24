@@ -25,6 +25,10 @@ In **Project → Settings → Environment Variables**, add:
 | `DAILY_DEV_PAT` | Yes | [daily.dev API settings](https://app.daily.dev/settings/api) |
 | `GEMINI_API_KEY` | Yes | [Google AI Studio](https://aistudio.google.com/apikey) |
 | `NEXT_PUBLIC_APP_URL` | Yes | Your live URL, e.g. `https://devmatch-dev.vercel.app` (no trailing slash) |
+| `UPSTASH_REDIS_REST_URL` | Yes* | Auto-set when you add **Upstash Redis** from [Vercel Marketplace → Storage](https://vercel.com/marketplace?category=storage&search=redis) |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes* | Same integration |
+
+\*Required for **short** share links (`/s/a1b2c3d4e5`). Without Redis, links embed the full card (~400+ characters).
 
 Optional: `GEMINI_MODEL` (e.g. `gemini-2.5-flash`)
 
@@ -52,4 +56,10 @@ npx vercel --prod
 ## Verify
 
 - Open `/` and run a match
-- Share card image: `https://YOUR_DOMAIN/api/share-card-publish?t=...` should return a PNG
+- Share page: `https://YOUR_DOMAIN/s/...` should show the full card
+- PNG: `https://YOUR_DOMAIN/api/share-card-publish/...` should return an image
+- X preview: `https://YOUR_DOMAIN/api/share-card-publish/...?social=1` should return 1200×630 PNG
+
+**Short links:** After adding Upstash Redis, redeploy and share again — URLs look like `https://devmatch-dev.vercel.app/s/a1b2c3d4e5` (~55 chars).
+
+**Without Redis:** URLs use an embedded token (`/s/z.N4Ig...`, long but stateless).

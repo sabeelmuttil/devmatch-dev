@@ -16,7 +16,7 @@ export async function publishShareCardShort(
   payload: ShareCardPayload,
 ): Promise<string> {
   prune();
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
   const entry = { payload, expires: Date.now() + TTL_MS };
   store.set(id, entry);
   await saveShareToTmp(id, payload);
@@ -38,7 +38,7 @@ export async function getShareCardByShortId(
   return loadShareFromTmp(id);
 }
 
-/** Short ids are 12 hex chars from UUID. */
+/** Short ids are 10–12 hex chars from UUID (not lz `z.` tokens). */
 export function isShortShareId(id: string): boolean {
-  return /^[a-f0-9]{12}$/i.test(id);
+  return /^[a-f0-9]{10,12}$/i.test(id);
 }

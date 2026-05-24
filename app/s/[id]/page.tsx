@@ -1,4 +1,5 @@
 import { twitterPreviewApiPath } from "@/lib/share-card-og";
+import { sharePathId } from "@/lib/share-url";
 import type { Metadata } from "next";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -11,7 +12,7 @@ function originFromEnv(): string {
 }
 
 function pngPath(id: string): string {
-  return `/api/share-card-publish/${encodeURIComponent(id)}`;
+  return `/api/share-card-publish/${sharePathId(id)}`;
 }
 
 export async function generateMetadata({
@@ -19,7 +20,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const origin = originFromEnv();
-  const pageUrl = `${origin}/s/${encodeURIComponent(id)}`;
+  const pageUrl = `${origin}/s/${sharePathId(id)}`;
   const socialImage = `${origin}${twitterPreviewApiPath(id)}`;
 
   return {

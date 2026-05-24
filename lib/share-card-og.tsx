@@ -1,5 +1,6 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { resolveOgAvatarUrl } from "@/lib/share-og-avatar";
+import { sharePathId } from "@/lib/share-url";
 import { ImageResponse } from "next/og";
 
 /** Matches in-app ShareCard width (360px × 3). */
@@ -1029,5 +1030,5 @@ export function renderTwitterPreviewImage(
 }
 
 export function twitterPreviewApiPath(id: string): string {
-  return `/api/share-card-publish/${encodeURIComponent(id)}?social=1`;
+  return `/api/share-card-publish/${sharePathId(id)}?social=1`;
 }

@@ -2,6 +2,7 @@ import {
   renderShareCardImage,
   renderTwitterPreviewImage,
 } from "@/lib/share-card-og";
+import { loadShareRemote } from "@/lib/share-remote-store";
 import {
   getShareCardByShortId,
   isShortShareId,
@@ -22,6 +23,8 @@ async function resolvePayload(id: string) {
   const raw = decodeURIComponent(id).trim();
 
   if (isShortShareId(raw)) {
+    const remote = await loadShareRemote(raw);
+    if (remote) return remote;
     return getShareCardByShortId(raw);
   }
 
@@ -38,10 +41,10 @@ export async function GET(
   const payload = await resolvePayload(id);
 
   if (!payload) {
-    return NextResponse.json(
-      { error: "Invalid or expired card link" },
-      { status: 404 },
-    );
+    const hint = isShortShareId(decodeURIComponent(id).trim())
+      ? "This share link expired (server restarted). Run a new match on dailydevmatch.dev and share again."
+      : "Invalid or expired card link.";
+    return NextResponse.json({ error: hint }, { status: 404 });
   }
 
   try {

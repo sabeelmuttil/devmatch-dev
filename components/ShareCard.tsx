@@ -576,6 +576,9 @@ export function ShareCard({
           <div className="rounded-lg border border-white/10 bg-black/40 p-3">
             <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
               Share link (opens full screen)
+              {shareUrls.storage === "token"
+                ? " · long URL (add Redis on Vercel for short links)"
+                : ""}
             </p>
             <p className="break-all font-mono text-[11px] leading-relaxed text-cyan-300/90">
               {shareUrls.pageUrl}

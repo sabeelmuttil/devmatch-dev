@@ -1,11 +1,13 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
-import { encodeShareToken } from "@/lib/share-publish-token";
+import { shareUrlsFromToken } from "@/lib/share-url";
 
 export interface PublishedShareUrls {
   /** Human-friendly page — card fills the viewport. */
   pageUrl: string;
   /** Direct PNG for X / crawlers. */
   pngUrl: string;
+  /** `redis` / `local` = short link; `token` = long stateless link. */
+  storage?: "redis" | "local" | "token";
 }
 
 function publishKey(payload: ShareCardPayload): string {
@@ -40,7 +42,7 @@ export function publishShareCardImageCached(
   return promise;
 }
 
-/** Publish card and return short page + PNG URLs. */
+/** Publish card and return short page + PNG URLs when Redis is configured. */
 export async function publishShareCardImage(
   payload: ShareCardPayload,
 ): Promise<PublishedShareUrls> {
@@ -60,28 +62,19 @@ export async function publishShareCardImage(
     pngUrl?: string;
     imageUrl?: string;
     imageUrlShort?: string;
+    storage?: "redis" | "local" | "token";
   };
 
   const pageUrl = data.pageUrl ?? data.imageUrlShort;
   const pngUrl = data.pngUrl ?? data.imageUrl;
   if (!pageUrl || !pngUrl) throw new Error("No share URLs returned");
-  return { pageUrl, pngUrl };
+  return { pageUrl, pngUrl, storage: data.storage };
 }
 
-function sharePaths(origin: string, id: string) {
-  const base = origin.replace(/\/$/, "");
-  const encoded = encodeURIComponent(id);
-  return {
-    pageUrl: `${base}/s/${encoded}`,
-    pngUrl: `${base}/api/share-card-publish/${encoded}`,
-  };
-}
-
-/** Fallback when POST publish fails — stateless compressed token. */
+/** Fallback when POST publish fails — stateless compressed token (long URL). */
 export function buildPublicShareUrls(
   payload: ShareCardPayload,
   origin: string,
 ): PublishedShareUrls {
-  const token = encodeShareToken(payload, { forPublicUrl: true });
-  return sharePaths(origin, token);
+  return { ...shareUrlsFromToken(payload, origin), storage: "token" };
 }

@@ -1,11 +1,13 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { renderShareCardImage } from "@/lib/share-card-og";
+import { saveShareRemote } from "@/lib/share-remote-store";
 import { publishShareCardShort } from "@/lib/share-publish-store";
 import {
   decodeShareToken,
   encodeShareToken,
   isLikelyTruncatedToken,
 } from "@/lib/share-publish-token";
+import { shareUrlsForId } from "@/lib/share-url";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -29,22 +31,29 @@ export async function POST(request: Request) {
   const origin = originFromRequest(request);
   const token = encodeShareToken(body, { forPublicUrl: true });
   const shortId = await publishShareCardShort(body);
+  const savedRemote = await saveShareRemote(shortId, body);
 
-  const pngUrl = (id: string) =>
-    `${origin}/api/share-card-publish/${encodeURIComponent(id)}`;
-  const pageUrl = (id: string) => `${origin}/s/${encodeURIComponent(id)}`;
+  // Short id: Redis on Vercel, or in-memory on local dev (same Node process).
+  const useShortId =
+    savedRemote || process.env.NODE_ENV === "development";
+  const shareId = useShortId ? shortId : token;
+  const urls = shareUrlsForId(origin, shareId);
+
+  const storage = savedRemote ? "redis" : useShortId ? "local" : "token";
 
   return NextResponse.json({
-    id: shortId,
-    pngUrl: pngUrl(shortId),
-    pageUrl: pageUrl(shortId),
-    imageUrl: pngUrl(shortId),
-    imageUrlShort: pageUrl(shortId),
+    id: useShortId ? shortId : null,
+    storage,
+    pngUrl: urls.pngUrl,
+    pageUrl: urls.pageUrl,
+    imageUrl: urls.pngUrl,
+    imageUrlShort: urls.pageUrl,
   });
 }
 
 /** GET ?t= — stateless card image (works across serverless instances). */
 export async function GET(request: Request) {
+  const origin = originFromRequest(request);
   const token = new URL(request.url).searchParams.get("t");
   if (!token) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
