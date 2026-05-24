@@ -91,8 +91,9 @@ export function EmbedBadgePanel({
           <p
             className={`text-zinc-400 ${compact ? "mt-1 text-xs" : "mt-1 text-sm"}`}
           >
-            Add your Tech Identity badge to a portfolio, Notion page, or GitHub
-            README.
+            Use <strong className="text-zinc-300">HTML</strong> on your site; use{" "}
+            <strong className="text-zinc-300">GitHub README</strong> for profile
+            (GitHub blocks iframes).
           </p>
         </div>
         <button
@@ -139,7 +140,7 @@ export function EmbedBadgePanel({
           copied={copied === "script"}
         />
         <CodeBlock
-          label="GitHub README"
+          label="GitHub README (image badge)"
           code={snippets.readme}
           onCopy={() => void handleCopy("readme")}
           copied={copied === "readme"}

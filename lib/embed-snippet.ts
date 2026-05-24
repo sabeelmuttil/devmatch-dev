@@ -8,6 +8,18 @@ export function profilePageUrl(base: string, username: string): string {
   return `${origin}/${encodeURIComponent(username)}`;
 }
 
+/** PNG badge image — works in GitHub README (iframes do not). */
+export function readmeBadgeImageUrl(
+  base: string,
+  username: string,
+  persona?: string,
+): string {
+  const origin = base.replace(/\/$/, "");
+  const path = `${origin}/api/readme-badge/${encodeURIComponent(username)}`;
+  if (!persona?.trim()) return path;
+  return `${path}?persona=${encodeURIComponent(persona.trim())}`;
+}
+
 export function buildIframeSnippet(base: string, username: string): string {
   const src = embedPageUrl(base, username);
   return `<iframe
@@ -29,16 +41,15 @@ export function buildScriptSnippet(base: string, username: string): string {
 ></script>`;
 }
 
+/** Markdown for GitHub README — image badge + link (GitHub strips iframes). */
 export function buildReadmeSnippet(
   base: string,
   username: string,
   persona: string,
 ): string {
   const profile = profilePageUrl(base, username);
-  return `### 🧬 My Tech Identity
+  const badge = readmeBadgeImageUrl(base, username, persona);
+  const label = persona.trim() || "Tech Identity";
 
-**${persona}** — powered by [dailydevmatch.dev](${profile})
-
-<!-- Paste into your README (HTML block) -->
-${buildIframeSnippet(base, username)}`;
+  return `[![${label}](${badge})](${profile})`;
 }
