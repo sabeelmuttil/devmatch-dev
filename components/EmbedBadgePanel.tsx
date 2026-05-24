@@ -1,5 +1,6 @@
 "use client";
 
+import { CodeSnippetBlock } from "@/components/CodeSnippetBlock";
 import {
   buildIframeSnippet,
   buildReadmeSnippet,
@@ -19,38 +20,6 @@ export interface EmbedBadgePanelProps {
   tags?: string[];
   /** Tighter layout for results page — codes in a row on large screens. */
   compact?: boolean;
-}
-
-function CodeBlock({
-  label,
-  code,
-  onCopy,
-  copied,
-}: {
-  label: string;
-  code: string;
-  onCopy: () => void;
-  copied: boolean;
-}) {
-  return (
-    <div className="glass-card flex h-full min-h-[9.5rem] flex-col rounded-xl">
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-          {label}
-        </span>
-        <button
-          type="button"
-          onClick={onCopy}
-          className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200 transition hover:bg-violet-500/20"
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-      <pre className="min-h-0 flex-1 overflow-auto p-3 font-mono text-[10px] leading-relaxed text-zinc-400 whitespace-pre-wrap break-all">
-        {code}
-      </pre>
-    </div>
-  );
 }
 
 export function EmbedBadgePanel({
@@ -88,6 +57,15 @@ export function EmbedBadgePanel({
     },
     [snippets],
   );
+
+  const blocks: {
+    kind: SnippetKind;
+    label: string;
+  }[] = [
+    { kind: "iframe", label: "HTML" },
+    { kind: "script", label: "Script" },
+    { kind: "readme", label: "README" },
+  ];
 
   return (
     <div className="glass-panel rounded-2xl p-5 sm:p-6">
@@ -136,24 +114,17 @@ export function EmbedBadgePanel({
             : "mt-4 space-y-3"
         }
       >
-        <CodeBlock
-          label="HTML (iframe)"
-          code={snippets.iframe}
-          onCopy={() => void handleCopy("iframe")}
-          copied={copied === "iframe"}
-        />
-        <CodeBlock
-          label="Script tag"
-          code={snippets.script}
-          onCopy={() => void handleCopy("script")}
-          copied={copied === "script"}
-        />
-        <CodeBlock
-          label="GitHub README (image badge)"
-          code={snippets.readme}
-          onCopy={() => void handleCopy("readme")}
-          copied={copied === "readme"}
-        />
+        {blocks.map(({ kind, label }) => (
+          <CodeSnippetBlock
+            key={kind}
+            kind={kind}
+            label={label}
+            code={snippets[kind]}
+            username={username}
+            copied={copied === kind}
+            onCopy={() => void handleCopy(kind)}
+          />
+        ))}
       </div>
     </div>
   );

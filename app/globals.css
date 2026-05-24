@@ -108,6 +108,20 @@ body {
   background-size: 48px 48px;
 }
 
+/* Embed snippet code editor */
+.code-editor-body {
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 18, 0.98) 0%,
+    rgba(8, 8, 14, 1) 100%
+  );
+}
+
+.code-gutter {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
 @keyframes blob-drift {
   0%,
   100% {
