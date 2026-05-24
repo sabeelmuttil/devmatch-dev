@@ -13,6 +13,7 @@ import {
   publishShareCardImageCached,
   type PublishedShareUrls,
 } from "@/lib/publish-share-card";
+import { shareUrlsFromToken } from "@/lib/share-url";
 import { buildXIntentUrl, buildXTweetText } from "@/lib/share-card-text";
 import { copyPngToClipboard, copyTextToClipboard } from "@/lib/share-clipboard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -175,7 +176,14 @@ export function ShareCard({
       .catch((err) => {
         if (!cancelled) {
           console.warn("[ShareCard] share URL build failed:", err);
-          setShareUrls(null);
+          try {
+            setShareUrls({
+              ...shareUrlsFromToken(serverPayload, origin),
+              storage: "token",
+            });
+          } catch {
+            setShareUrls(null);
+          }
         }
       })
       .finally(() => {
@@ -222,7 +230,7 @@ export function ShareCard({
       setExportError(
         shareLinkLoading
           ? "Share link is still loading — wait a moment and try again."
-          : "Could not create share link. On Vercel, add Redis or Blob under Storage, then redeploy.",
+          : "Could not create share link — refresh and try again.",
       );
       return;
     }
@@ -582,7 +590,13 @@ export function ShareCard({
           <div className="rounded-lg border border-white/10 bg-black/40 p-3">
             <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
               Share link (opens full screen)
+              {shareUrls.storage === "token" ? " · add Vercel Storage for shorter links" : ""}
             </p>
+            {shareUrls.storageHint && shareUrls.storage === "token" ? (
+              <p className="mb-2 text-[10px] leading-relaxed text-amber-400/90">
+                {shareUrls.storageHint}
+              </p>
+            ) : null}
             <p className="break-all font-mono text-[11px] leading-relaxed text-cyan-300/90">
               {shareUrls.pageUrl}
             </p>

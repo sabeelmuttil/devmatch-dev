@@ -27,9 +27,13 @@ In **Project → Settings → Environment Variables**, add:
 | `NEXT_PUBLIC_APP_URL` | Yes | Your live URL, e.g. `https://devmatch-dev.vercel.app` (no trailing slash) |
 | `UPSTASH_REDIS_REST_URL` | Yes† | From **Upstash Redis** ([Vercel Storage](https://vercel.com/marketplace?category=storage&search=redis)) |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes† | Same integration |
+| `KV_REST_API_URL` | Yes† | Alternative names if you use **Vercel KV** instead of Upstash-branded vars |
+| `KV_REST_API_TOKEN` | Yes† | Pair with `KV_REST_API_URL` |
 | `BLOB_READ_WRITE_TOKEN` | Yes† | Alternative: **Vercel Blob** storage (only need one of Redis or Blob) |
 
-†**Required in Production** for share links. Without storage, Share on X returns an error (no long URLs).
+†**Required for short** `/s/abc123` links. Without storage, the app still works using longer token URLs.
+
+**“Sensitive” in Vercel:** That only hides values in the dashboard. **Non-sensitive is fine** — serverless functions can still read them. What matters: variables are enabled for **Production** and you **redeploy** after adding storage.
 
 Optional: `GEMINI_MODEL` (e.g. `gemini-2.5-flash`)
 

@@ -1,5 +1,22 @@
 export function avatarFallbackUrl(seed: string): string {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+  return `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(seed)}`;
+}
+
+const PROXIABLE_HOSTS = new Set([
+  "lh3.googleusercontent.com",
+  "avatars.githubusercontent.com",
+  "media.daily.dev",
+  "res.cloudinary.com",
+  "api.dicebear.com",
+]);
+
+function canProxyImageUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && PROXIABLE_HOSTS.has(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 export function resolveAvatarUrl(
@@ -7,19 +24,22 @@ export function resolveAvatarUrl(
   seed: string,
 ): string {
   const trimmed = image?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : avatarFallbackUrl(seed);
+  if (trimmed) {
+    try {
+      if (canProxyImageUrl(trimmed)) return trimmed;
+    } catch {
+      /* fall through to generated avatar */
+    }
+  }
+  return avatarFallbackUrl(seed);
 }
 
-/** Same-origin proxy so daily.dev / Google avatars load reliably in the browser and OG. */
+/** Same-origin proxy so allowed avatars load without CORS issues. */
 export function proxiedAvatarUrl(
   origin: string,
   image: string | null | undefined,
   seed: string,
 ): string {
   const target = resolveAvatarUrl(image, seed);
-  let url = target;
-  if (url.includes("dicebear.com") && url.includes("/svg")) {
-    url = url.replace("/svg", "/png");
-  }
-  return `${origin.replace(/\/$/, "")}/api/image-proxy?url=${encodeURIComponent(url)}`;
+  return `${origin.replace(/\/$/, "")}/api/image-proxy?url=${encodeURIComponent(target)}`;
 }

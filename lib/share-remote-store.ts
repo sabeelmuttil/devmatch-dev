@@ -3,18 +3,17 @@ import type { ShareCardPayload } from "@/lib/export-card-image";
 const TTL_SECONDS = 60 * 60 * 24;
 const BLOB_PATH = (id: string) => `share/${id}.json`;
 
+/** Upstash integration or Vercel KV (`KV_REST_API_*`) — both work with `Redis.fromEnv()`. */
 function hasUpstash(): boolean {
   return !!(
-    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    (process.env.UPSTASH_REDIS_REST_URL &&
+      process.env.UPSTASH_REDIS_REST_TOKEN) ||
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
   );
 }
 
 function hasBlob(): boolean {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
-}
-
-function isProductionEnv(): boolean {
-  return process.env.NODE_ENV === "production";
 }
 
 async function saveUpstash(
@@ -102,6 +101,14 @@ export function isRemoteShareConfigured(): boolean {
   return hasUpstash() || hasBlob();
 }
 
+/** Safe for API responses — booleans only, no secrets. */
+export function shareStorageEnvStatus(): {
+  redis: boolean;
+  blob: boolean;
+} {
+  return { redis: hasUpstash(), blob: hasBlob() };
+}
+
 export function shareStorageSetupMessage(): string {
   return (
     "Short share links need storage on Vercel. In your project go to Storage → " +
@@ -109,6 +116,9 @@ export function shareStorageSetupMessage(): string {
   );
 }
 
-export function mustUseShortShareLinks(): boolean {
-  return isProductionEnv();
+export function shareStorageSaveFailedMessage(): string {
+  return (
+    "Storage env vars are present but saving the share card failed. " +
+    "Open Vercel → Deployments → latest → Functions logs, then redeploy after fixing Redis/Blob."
+  );
 }

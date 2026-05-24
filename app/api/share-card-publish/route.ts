@@ -1,15 +1,18 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { renderShareCardImage } from "@/lib/share-card-og";
-import {
-  mustUseShortShareLinks,
-  saveShareRemote,
-  shareStorageSetupMessage,
-} from "@/lib/share-remote-store";
 import { publishShareCardShort } from "@/lib/share-publish-store";
 import {
   decodeShareToken,
+  encodeShareToken,
   isLikelyTruncatedToken,
 } from "@/lib/share-publish-token";
+import {
+  isRemoteShareConfigured,
+  saveShareRemote,
+  shareStorageEnvStatus,
+  shareStorageSaveFailedMessage,
+  shareStorageSetupMessage,
+} from "@/lib/share-remote-store";
 import { shareUrlsForId } from "@/lib/share-url";
 import { NextResponse } from "next/server";
 
@@ -22,7 +25,7 @@ function originFromRequest(request: Request): string {
   );
 }
 
-/** POST — return short public share URLs (never long token URLs in production). */
+/** POST — short link when storage exists; otherwise stateless token (always works). */
 export async function POST(request: Request) {
   let body: ShareCardPayload;
   try {
@@ -34,34 +37,31 @@ export async function POST(request: Request) {
   const origin = originFromRequest(request);
   const shortId = await publishShareCardShort(body);
   const remoteStorage = await saveShareRemote(shortId, body);
+  const useShortId = !remoteStorage;
 
-  const useLocalShortId =
-    !remoteStorage && process.env.NODE_ENV === "development";
-  const useShortId = !!remoteStorage || useLocalShortId;
-
-  if (mustUseShortShareLinks() && !useShortId) {
-    return NextResponse.json(
-      { error: shareStorageSetupMessage() },
-      { status: 503 },
-    );
+  if (remoteStorage || useShortId) {
+    const urls = shareUrlsForId(origin, shortId);
+    return NextResponse.json({
+      id: shortId,
+      storage: remoteStorage ?? "local",
+      pngUrl: urls.pngUrl,
+      pageUrl: urls.pageUrl,
+      imageUrl: urls.pngUrl,
+      imageUrlShort: urls.pageUrl,
+    });
   }
 
-  if (!useShortId) {
-    return NextResponse.json(
-      {
-        error:
-          "Could not create share link. Run `npm run dev` locally or add Vercel storage.",
-      },
-      { status: 503 },
-    );
-  }
+  const token = encodeShareToken(body, { forPublicUrl: true });
+  const urls = shareUrlsForId(origin, token);
 
-  const urls = shareUrlsForId(origin, shortId);
-  const storage = remoteStorage ?? "local";
-
+  const env = shareStorageEnvStatus();
   return NextResponse.json({
-    id: shortId,
-    storage,
+    id: null,
+    storage: "token",
+    storageEnv: env,
+    storageHint: isRemoteShareConfigured()
+      ? shareStorageSaveFailedMessage()
+      : shareStorageSetupMessage(),
     pngUrl: urls.pngUrl,
     pageUrl: urls.pageUrl,
     imageUrl: urls.pngUrl,
