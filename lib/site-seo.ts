@@ -2,8 +2,15 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "dailydevmatch.dev";
 export const SITE_TAGLINE = "Find Your Tech Soulmate";
+/** ~55 characters — within SEO title sweet spot (50–60). */
+export const SITE_TITLE =
+  "dailydevmatch.dev — Find Your Tech Soulmate on daily.dev";
+export const HOME_PAGE_TITLE =
+  "Find Your Tech Soulmate — AI Developer Matching for daily.dev";
 export const DEFAULT_DESCRIPTION =
   "AI-powered developer matchmaking for daily.dev. Decode your Tech DNA, reveal your developer persona, and discover compatible creators to build with.";
+export const OG_IMAGE_ALT =
+  "dailydevmatch.dev — Find your Tech Soulmate. Enter your daily.dev username to get your Tech DNA.";
 
 export function getSiteUrl(): string {
   return (
@@ -34,7 +41,7 @@ const defaultOgImage = "/opengraph-image";
 /** Root + fallback metadata */
 export function rootMetadata(): Metadata {
   const siteUrl = getSiteUrl();
-  const title = `${SITE_NAME} — ${SITE_TAGLINE}`;
+  const title = SITE_TITLE;
   const ogImage = absoluteUrl(defaultOgImage);
 
   return {
@@ -73,7 +80,7 @@ export function rootMetadata(): Metadata {
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: `${SITE_NAME} — ${SITE_TAGLINE}`,
+          alt: OG_IMAGE_ALT,
         },
       ],
     },
@@ -98,7 +105,8 @@ export function rootMetadata(): Metadata {
 
 export function homeMetadata(): Metadata {
   const siteUrl = getSiteUrl();
-  const title = `${SITE_TAGLINE} · ${SITE_NAME}`;
+  const title = HOME_PAGE_TITLE;
+  const ogImage = absoluteUrl(defaultOgImage);
 
   return {
     title,
@@ -108,6 +116,20 @@ export function homeMetadata(): Metadata {
       url: siteUrl,
       title,
       description: DEFAULT_DESCRIPTION,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: OG_IMAGE_ALT,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: DEFAULT_DESCRIPTION,
+      images: [ogImage],
     },
   };
 }
@@ -162,9 +184,18 @@ export function embedMetadata(username: string): Metadata {
 
 export function websiteJsonLd(): Record<string, unknown> {
   const siteUrl = getSiteUrl();
+  const organizationId = `${siteUrl}/#organization`;
+
   return {
     "@context": "https://schema.org",
     "@graph": [
+      {
+        "@type": "Organization",
+        "@id": organizationId,
+        name: SITE_NAME,
+        url: siteUrl,
+        description: DEFAULT_DESCRIPTION,
+      },
       {
         "@type": "WebSite",
         "@id": `${siteUrl}/#website`,
@@ -172,25 +203,31 @@ export function websiteJsonLd(): Record<string, unknown> {
         name: SITE_NAME,
         description: DEFAULT_DESCRIPTION,
         inLanguage: "en-US",
+        publisher: { "@id": organizationId },
       },
       {
-        "@type": "WebApplication",
-        "@id": `${siteUrl}/#app`,
+        "@type": "SoftwareApplication",
+        "@id": `${siteUrl}/#software`,
         name: SITE_NAME,
         url: siteUrl,
         applicationCategory: "DeveloperApplication",
-        operatingSystem: "Web",
+        applicationSubCategory: "Developer matchmaking",
+        operatingSystem: "Web browser",
         description: DEFAULT_DESCRIPTION,
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
         },
-        publisher: {
-          "@type": "Organization",
-          name: SITE_NAME,
-          url: siteUrl,
-        },
+        featureList: [
+          "Tech DNA analysis from daily.dev profile",
+          "AI developer persona",
+          "Compatible developer matches",
+          "Shareable Tech Identity card",
+        ],
+        screenshot: absoluteUrl(defaultOgImage),
+        publisher: { "@id": organizationId },
       },
     ],
   };
