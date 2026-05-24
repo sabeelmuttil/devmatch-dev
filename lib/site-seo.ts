@@ -5,8 +5,9 @@ export const SITE_TAGLINE = "Find Your Tech Soulmate";
 /** ~55 characters — within SEO title sweet spot (50–60). */
 export const SITE_TITLE =
   "dailydevmatch.dev — Find Your Tech Soulmate on daily.dev";
+/** 57 characters */
 export const HOME_PAGE_TITLE =
-  "Find Your Tech Soulmate — AI Developer Matching for daily.dev";
+  "Find Your Tech Soulmate — AI Dev Matching on daily.dev";
 export const DEFAULT_DESCRIPTION =
   "AI-powered developer matchmaking for daily.dev. Decode your Tech DNA, reveal your developer persona, and discover compatible creators to build with.";
 export const OG_IMAGE_ALT =
