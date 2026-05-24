@@ -1,4 +1,4 @@
-const RESERVED_USERNAMES = new Set(["s", "api"]);
+const RESERVED_USERNAMES = new Set(["s", "api", "embed"]);
 
 /** daily.dev-style username for URL segment `/username` */
 export function normalizeUsernameRoute(input: string): string | null {

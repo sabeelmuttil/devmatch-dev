@@ -1,8 +1,13 @@
 "use client";
 
 import { Avatar } from "@/components/Avatar";
+import { EmbedBadgePanel } from "@/components/EmbedBadgePanel";
 import { ShareCard } from "@/components/ShareCard";
+import { useClientOrigin } from "@/lib/use-client-origin";
 import * as React from "react";
+
+const DEFAULT_APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://dailydevmatch.dev";
 
 export interface MatchProfile {
   id: string;
@@ -370,13 +375,16 @@ export function ResultsView({
   const dnaEntries = Object.entries(techPersonality.techDna).sort(
     ([, a], [, b]) => b - a,
   );
+  const appOrigin = useClientOrigin(DEFAULT_APP_URL);
+  const embedUsername = profile.username ?? "";
+
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
       <SiteHeader />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-4 sm:px-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-4 sm:px-8">
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar
               src={profile.image}
@@ -403,49 +411,9 @@ export function ResultsView({
           </button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
-          <div className="glow-border lg:col-span-3 rounded-2xl bg-[#0f0f16]/90 p-6 backdrop-blur-sm sm:p-8">
-            <div className="mb-6 flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-cyan-400" />
-              <h3 className="text-lg font-semibold text-white">Tech DNA</h3>
-            </div>
-            <div className="space-y-4">
-              {dnaEntries.map(([label, value], i) => (
-                <DnaBar
-                  key={`dna-${i}-${label}`}
-                  label={label}
-                  value={value}
-                  colorClass={DNA_COLORS[i % DNA_COLORS.length]}
-                  delay={i * 120}
-                />
-              ))}
-            </div>
-            {stack.length > 0 && (
-              <div className="mt-8 border-t border-white/5 pt-6">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Your stack
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {stack.slice(0, 12).map((item, i) => (
-                    <span
-                      key={item.id || `stack-${i}`}
-                      className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs text-violet-200"
-                    >
-                      {item.title}
-                    </span>
-                  ))}
-                  {stack.length > 12 && (
-                    <span className="rounded-lg px-2 py-1 text-xs text-zinc-500">
-                      +{stack.length - 12} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            <div className="glow-border-cyan flex flex-col rounded-2xl bg-gradient-to-br from-violet-950/80 via-[#0f0f16] to-cyan-950/40 p-6 sm:p-8">
+        <div className="grid items-start gap-4 lg:grid-cols-12">
+          <div className="flex flex-col gap-4 lg:col-span-5">
+            <div className="glow-border-cyan rounded-2xl bg-gradient-to-br from-violet-950/80 via-[#0f0f16] to-cyan-950/40 p-4 sm:p-5">
               <p className="text-xs font-medium uppercase tracking-wider text-cyan-400/80">
                 Developer Persona
               </p>
@@ -456,172 +424,216 @@ export function ResultsView({
                   <code className="text-amber-100">.env</code> for AI personas.
                 </p>
               )}
-              <div className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
-                <div className="animate-float relative">
-                  <div className="absolute inset-0 rounded-full bg-violet-500/30 blur-2xl" />
-                  <div className="relative rounded-2xl border border-violet-400/40 bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-6 py-5 shadow-lg shadow-violet-500/20">
-                    <span className="text-2xl font-bold text-gradient sm:text-3xl">
+              <div className="mt-3">
+                <div className="relative inline-block">
+                  <div className="relative rounded-xl border border-violet-400/40 bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-4 py-2.5">
+                    <span className="text-lg font-bold text-gradient sm:text-xl">
                       {techPersonality.title}
                     </span>
                   </div>
                 </div>
-                <p className="mt-6 text-sm leading-relaxed text-zinc-400">
+                <p className="mt-3 text-sm leading-relaxed text-zinc-400">
                   {techPersonality.description}
                 </p>
               </div>
-              {tags.length > 0 && (
-                <div className="mt-6 flex flex-wrap justify-center gap-1.5">
-                  {tags.slice(0, 6).map((tag, i) => (
-                    <span
-                      key={`tag-${i}-${tag}`}
-                      className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300"
-                    >
-                      #{tag}
-                    </span>
+
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                  <h3 className="text-sm font-semibold text-white">Tech DNA</h3>
+                </div>
+                <div className="space-y-2.5">
+                  {dnaEntries.map(([label, value], i) => (
+                    <DnaBar
+                      key={`dna-${i}-${label}`}
+                      label={label}
+                      value={value}
+                      colorClass={DNA_COLORS[i % DNA_COLORS.length]}
+                      delay={i * 120}
+                    />
                   ))}
+                </div>
+              </div>
+
+              {tags.length > 0 && (
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                    Top read topics
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.slice(0, 8).map((tag, i) => (
+                      <span
+                        key={`tag-${i}-${tag}`}
+                        className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {stack.length > 0 && (
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                    Your stack
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {stack.slice(0, 12).map((item, i) => (
+                      <span
+                        key={item.id || `stack-${i}`}
+                        className="rounded-md border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200"
+                      >
+                        {item.title}
+                      </span>
+                    ))}
+                    {stack.length > 12 && (
+                      <span className="px-1 py-0.5 text-[11px] text-zinc-500">
+                        +{stack.length - 12}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 p-5 backdrop-blur-sm sm:p-6">
-              <p className="mb-4 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+            {perfectMatches[0] && (
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                  Top match
+                </p>
+                <a
+                  href={dailyDevProfileUrl(perfectMatches[0].username)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center gap-2.5 rounded-lg transition hover:bg-white/5"
+                >
+                  <Avatar
+                    src={perfectMatches[0].avatar}
+                    name={perfectMatches[0].name}
+                    username={perfectMatches[0].username}
+                    size={40}
+                    ringClassName="ring-2 ring-violet-500/40"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {perfectMatches[0].name}
+                    </p>
+                    <p className="font-mono text-[11px] text-zinc-500">
+                      @{perfectMatches[0].username}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-md bg-cyan-500/15 px-2 py-0.5 text-xs font-bold text-cyan-300">
+                    {perfectMatches[0].matchScore}%
+                  </span>
+                </a>
+                <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-zinc-400">
+                  {perfectMatches[0].matchReason}
+                </p>
+              </div>
+            )}
+
+            {perfectMatches.length > 1 && (
+              <div className="rounded-xl border border-white/5 bg-[#0f0f16]/80 p-3.5">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                  Compatible developers
+                </p>
+                <div className="mt-2.5 grid grid-cols-2 gap-2">
+                  {perfectMatches.map((match) => (
+                    <a
+                      key={match.username}
+                      href={dailyDevProfileUrl(match.username)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex min-w-0 flex-col items-center rounded-xl border border-white/10 bg-black/30 px-2 py-3 text-center transition hover:border-violet-500/40 hover:bg-violet-500/5"
+                    >
+                      <Avatar
+                        src={match.avatar}
+                        name={match.name}
+                        username={match.username}
+                        size={40}
+                        ringClassName="ring-2 ring-white/10 group-hover:ring-violet-500/50"
+                      />
+                      <p className="mt-2 w-full truncate text-[11px] font-semibold text-white">
+                        {match.name}
+                      </p>
+                      <p className="w-full truncate font-mono text-[10px] text-zinc-500">
+                        @{match.username}
+                      </p>
+                      <p className="mt-1.5 text-sm font-bold text-cyan-300">
+                        {match.matchScore}%
+                      </p>
+                      <span
+                        className={`mt-1 rounded-full px-2 py-0.5 text-[8px] font-medium uppercase tracking-wide ${
+                          match.relationship === "similar"
+                            ? "bg-violet-500/20 text-violet-300"
+                            : "bg-cyan-500/15 text-cyan-400"
+                        }`}
+                      >
+                        {match.relationship === "similar" ? "Similar" : "Fit"}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-7 lg:sticky lg:top-4 lg:self-start">
+            <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 px-4 py-4 backdrop-blur-sm sm:px-5">
+              <p className="mb-3 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Share your Tech Identity
               </p>
-              <ShareCard
-                name={profile.name ?? profile.username ?? "Developer"}
-                username={profile.username ?? undefined}
-                avatar={profile.image ?? undefined}
-                persona={techPersonality.title}
-                personaDescription={techPersonality.description}
-                techDna={dnaEntries.map(([label, value]) => ({
-                  label,
-                  value,
-                }))}
-                tags={tags}
-                topMatch={
-                  perfectMatches[0]
-                    ? {
-                        name: perfectMatches[0].name,
-                        username: perfectMatches[0].username,
-                        matchScore: perfectMatches[0].matchScore,
-                        matchReason: perfectMatches[0].matchReason,
-                      }
-                    : undefined
-                }
-                skills={
-                  [
-                    ...new Set(
-                      stack.length >= 3
-                        ? stack.map((s) => s.title)
-                        : [
-                            ...stack.map((s) => s.title),
-                            ...dnaEntries.map(([label]) => label),
-                          ],
-                    ),
-                  ].slice(0, 3) as [string, string, string] | string[]
-                }
-              />
+              <div className="flex justify-center">
+                <ShareCard
+                  name={profile.name ?? profile.username ?? "Developer"}
+                  username={profile.username ?? undefined}
+                  avatar={profile.image ?? undefined}
+                  persona={techPersonality.title}
+                  personaDescription={techPersonality.description}
+                  techDna={dnaEntries.map(([label, value]) => ({
+                    label,
+                    value,
+                  }))}
+                  tags={tags}
+                  topMatch={
+                    perfectMatches[0]
+                      ? {
+                          name: perfectMatches[0].name,
+                          username: perfectMatches[0].username,
+                          matchScore: perfectMatches[0].matchScore,
+                          matchReason: perfectMatches[0].matchReason,
+                        }
+                      : undefined
+                  }
+                  skills={
+                    [
+                      ...new Set(
+                        stack.length >= 3
+                          ? stack.map((s) => s.title)
+                          : [
+                              ...stack.map((s) => s.title),
+                              ...dnaEntries.map(([label]) => label),
+                            ],
+                      ),
+                    ].slice(0, 3) as [string, string, string] | string[]
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <section className="mt-10">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-white sm:text-2xl">
-                Compatible Developers
-              </h3>
-              <p className="mt-1 text-sm text-zinc-500">
-                Real daily.dev creators matched to your read tags &amp; stack
-              </p>
-            </div>
+        {embedUsername ? (
+          <div className="mt-4">
+            <EmbedBadgePanel
+              compact
+              username={embedUsername}
+              persona={techPersonality.title}
+              appUrl={appOrigin}
+            />
           </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {perfectMatches.map((match) => (
-              <article
-                key={match.username}
-                className="group glow-border flex flex-col rounded-2xl bg-[#0f0f16]/90 p-5 backdrop-blur-sm transition-transform hover:-translate-y-1 sm:p-6"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      src={match.avatar}
-                      name={match.name}
-                      username={match.username}
-                      size={48}
-                      ringClassName="ring-2 ring-white/10 transition-all group-hover:ring-violet-500/50"
-                    />
-                    <div>
-                      <p className="font-semibold text-white">{match.name}</p>
-                      <p className="font-mono text-xs text-zinc-500">
-                        @{match.username}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-3 py-1.5 text-center">
-                    <p className="text-lg font-bold text-cyan-300">
-                      {match.matchScore}%
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-                      Match
-                    </p>
-                  </div>
-                </div>
-
-                <span
-                  className={`mt-4 inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    match.relationship === "similar"
-                      ? "bg-violet-500/15 text-violet-300"
-                      : "bg-cyan-500/15 text-cyan-300"
-                  }`}
-                >
-                  {match.relationship === "similar"
-                    ? "Similar stack"
-                    : "Complements you"}
-                </span>
-
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-400">
-                  {match.matchReason}
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {match.stack.slice(0, 5).map((tech, i) => (
-                    <span
-                      key={`${match.username}-tech-${i}`}
-                      className="rounded-md bg-zinc-800/80 px-2 py-0.5 text-xs text-zinc-300"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-
-                <a
-                  href={dailyDevProfileUrl(match.username)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`View @${match.username} on daily.dev`}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-500/40 bg-violet-500/10 py-3 text-sm font-semibold text-violet-200 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-200"
-                >
-                  Connect
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              </article>
-            ))}
-          </div>
-        </section>
+        ) : null}
       </main>
     </div>
   );

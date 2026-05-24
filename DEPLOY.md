@@ -76,6 +76,14 @@ That is enough — the app uses `REDIS_URL` for short links. You do **not** need
 3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into **Environment Variables** → Production  
 4. Redeploy  
 
+## Embeddable badge
+
+After deploy, users can embed their Tech Identity:
+
+- Live badge: `https://YOUR_DOMAIN/embed/USERNAME`
+- Script: `<script src="https://YOUR_DOMAIN/embed.js" data-username="USERNAME" async></script>`
+- Copy snippets from the results page (**Embed on your site**)
+
 ## Verify
 
 - Open `/` and run a match
