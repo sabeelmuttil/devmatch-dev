@@ -1,10 +1,13 @@
 import type { ShareCardPayload } from "@/lib/export-card-image";
 import { renderShareCardImage } from "@/lib/share-card-og";
-import { saveShareRemote } from "@/lib/share-remote-store";
+import {
+  mustUseShortShareLinks,
+  saveShareRemote,
+  shareStorageSetupMessage,
+} from "@/lib/share-remote-store";
 import { publishShareCardShort } from "@/lib/share-publish-store";
 import {
   decodeShareToken,
-  encodeShareToken,
   isLikelyTruncatedToken,
 } from "@/lib/share-publish-token";
 import { shareUrlsForId } from "@/lib/share-url";
@@ -19,7 +22,7 @@ function originFromRequest(request: Request): string {
   );
 }
 
-/** POST — return a stable public image URL for tweets. */
+/** POST — return short public share URLs (never long token URLs in production). */
 export async function POST(request: Request) {
   let body: ShareCardPayload;
   try {
@@ -29,20 +32,35 @@ export async function POST(request: Request) {
   }
 
   const origin = originFromRequest(request);
-  const token = encodeShareToken(body, { forPublicUrl: true });
   const shortId = await publishShareCardShort(body);
-  const savedRemote = await saveShareRemote(shortId, body);
+  const remoteStorage = await saveShareRemote(shortId, body);
 
-  // Short id: Redis on Vercel, or in-memory on local dev (same Node process).
-  const useShortId =
-    savedRemote || process.env.NODE_ENV === "development";
-  const shareId = useShortId ? shortId : token;
-  const urls = shareUrlsForId(origin, shareId);
+  const useLocalShortId =
+    !remoteStorage && process.env.NODE_ENV === "development";
+  const useShortId = !!remoteStorage || useLocalShortId;
 
-  const storage = savedRemote ? "redis" : useShortId ? "local" : "token";
+  if (mustUseShortShareLinks() && !useShortId) {
+    return NextResponse.json(
+      { error: shareStorageSetupMessage() },
+      { status: 503 },
+    );
+  }
+
+  if (!useShortId) {
+    return NextResponse.json(
+      {
+        error:
+          "Could not create share link. Run `npm run dev` locally or add Vercel storage.",
+      },
+      { status: 503 },
+    );
+  }
+
+  const urls = shareUrlsForId(origin, shortId);
+  const storage = remoteStorage ?? "local";
 
   return NextResponse.json({
-    id: useShortId ? shortId : null,
+    id: shortId,
     storage,
     pngUrl: urls.pngUrl,
     pageUrl: urls.pageUrl,
@@ -51,7 +69,7 @@ export async function POST(request: Request) {
   });
 }
 
-/** GET ?t= — stateless card image (works across serverless instances). */
+/** GET ?t= — legacy stateless query (kept for old links only). */
 export async function GET(request: Request) {
   const origin = originFromRequest(request);
   const token = new URL(request.url).searchParams.get("t");
@@ -62,7 +80,7 @@ export async function GET(request: Request) {
   const decoded = decodeShareToken(token);
   if (!decoded) {
     const hint = isLikelyTruncatedToken(token)
-      ? "Card link was cut off (too long). Open dailydevmatch.dev, run your match again, and use Share on X for a fresh link."
+      ? "Card link was cut off (too long). Run a new match and share again."
       : "Invalid card link.";
     return NextResponse.json({ error: hint }, { status: 404 });
   }

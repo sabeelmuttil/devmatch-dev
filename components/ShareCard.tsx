@@ -10,7 +10,6 @@ import {
 } from "@/lib/export-card-image";
 import { proxiedAvatarUrl } from "@/lib/avatar";
 import {
-  buildPublicShareUrls,
   publishShareCardImageCached,
   type PublishedShareUrls,
 } from "@/lib/publish-share-card";
@@ -173,14 +172,10 @@ export function ShareCard({
       .then((urls) => {
         if (!cancelled) setShareUrls(urls);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
-          try {
-            setShareUrls(buildPublicShareUrls(serverPayload, origin));
-          } catch (err) {
-            console.warn("[ShareCard] share URL build failed:", err);
-            setShareUrls(null);
-          }
+          console.warn("[ShareCard] share URL build failed:", err);
+          setShareUrls(null);
         }
       })
       .finally(() => {
@@ -220,13 +215,16 @@ export function ShareCard({
     const filename = `tech-identity-${slugify(username ?? name)}.png`;
     const origin =
       typeof window !== "undefined" ? window.location.origin : shareAppUrl;
-    let pageUrl = shareUrls?.pageUrl ?? "";
+    const pageUrl = shareUrls?.pageUrl ?? "";
     if (!pageUrl) {
-      try {
-        pageUrl = buildPublicShareUrls(serverPayload, origin).pageUrl;
-      } catch (encodeErr) {
-        console.warn("[ShareCard] share page URL build failed:", encodeErr);
-      }
+      shareOnXLock.current = false;
+      setExporting(null);
+      setExportError(
+        shareLinkLoading
+          ? "Share link is still loading — wait a moment and try again."
+          : "Could not create share link. On Vercel, add Redis or Blob under Storage, then redeploy.",
+      );
+      return;
     }
     const tweetText = buildXTweetText(tweetInput);
     const xUrl = buildXIntentUrl({
@@ -274,7 +272,15 @@ export function ShareCard({
         setExporting(null);
       }
     })();
-  }, [username, name, serverPayload, tweetInput, shareAppUrl, shareUrls]);
+  }, [
+    username,
+    name,
+    serverPayload,
+    tweetInput,
+    shareAppUrl,
+    shareUrls,
+    shareLinkLoading,
+  ]);
 
   const downloadCard = useCallback(
     async (format: "png" | "jpeg") => {
@@ -576,9 +582,6 @@ export function ShareCard({
           <div className="rounded-lg border border-white/10 bg-black/40 p-3">
             <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
               Share link (opens full screen)
-              {shareUrls.storage === "token"
-                ? " · long URL (add Redis on Vercel for short links)"
-                : ""}
             </p>
             <p className="break-all font-mono text-[11px] leading-relaxed text-cyan-300/90">
               {shareUrls.pageUrl}
