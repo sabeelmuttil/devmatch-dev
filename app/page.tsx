@@ -1,34 +1,9 @@
-"use client";
+import HomePageClient from "@/app/home-page-client";
+import { homeMetadata } from "@/lib/site-seo";
+import type { Metadata } from "next";
 
-import { LandingView } from "./components/devmatch-ui";
-import { usernameResultsPath } from "@/lib/username-route";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+export const metadata: Metadata = homeMetadata();
 
-export default function Home() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = useCallback(() => {
-    const path = usernameResultsPath(username);
-    if (path === "/") {
-      setError("Enter a valid daily.dev username (letters, numbers, - or _)");
-      return;
-    }
-    setError(null);
-    router.push(path);
-  }, [username, router]);
-
-  return (
-    <LandingView
-      username={username}
-      error={error}
-      onUsernameChange={(v) => {
-        setUsername(v);
-        if (error) setError(null);
-      }}
-      onSubmit={handleSubmit}
-    />
-  );
+export default function HomePage() {
+  return <HomePageClient />;
 }

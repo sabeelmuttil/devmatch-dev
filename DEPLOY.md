@@ -76,6 +76,17 @@ That is enough — the app uses `REDIS_URL` for short links. You do **not** need
 3. Copy `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into **Environment Variables** → Production  
 4. Redeploy  
 
+## SEO
+
+Set `NEXT_PUBLIC_APP_URL` to your production domain (no trailing slash). This drives:
+
+- Canonical URLs and Open Graph links
+- `/robots.txt` and `/sitemap.xml`
+- Dynamic titles for `/{username}` (from daily.dev profile)
+- Default social preview image at `/opengraph-image`
+
+Embed pages (`/embed/*`) are `noindex` to avoid duplicate content.
+
 ## Embeddable badge
 
 After deploy, users can embed their Tech Identity:

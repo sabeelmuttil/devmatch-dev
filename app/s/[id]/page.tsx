@@ -1,4 +1,5 @@
 import { twitterPreviewApiPath } from "@/lib/share-card-og";
+import { absoluteUrl, SITE_NAME } from "@/lib/site-seo";
 import { sharePathId } from "@/lib/share-url";
 import type { Metadata } from "next";
 
@@ -6,13 +7,6 @@ type PageProps = { params: Promise<{ id: string }> };
 
 /** In-app card width — PNG is 1080px but displayed at UI scale. */
 const SHARE_CARD_DISPLAY_WIDTH = 360;
-
-function originFromEnv(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000"
-  );
-}
 
 function pngPath(id: string): string {
   return `/api/share-card-publish/${sharePathId(id)}`;
@@ -22,20 +16,22 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const origin = originFromEnv();
-  const pageUrl = `${origin}/s/${sharePathId(id)}`;
-  const socialImage = `${origin}${twitterPreviewApiPath(id)}`;
+  const shortId = sharePathId(id);
+  const pageUrl = absoluteUrl(`/s/${shortId}`);
+  const socialImage = absoluteUrl(twitterPreviewApiPath(id));
+  const title = "Tech Identity Card";
+  const description = `Developer Tech Identity card on ${SITE_NAME} — Tech DNA, persona, and stack powered by daily.dev.`;
 
   return {
-    title: "Tech Identity Card · dailydevmatch.dev",
-    description:
-      "My developer Tech Identity from dailydevmatch.dev — daily.dev hackathon",
+    title,
+    description,
+    alternates: { canonical: pageUrl },
     openGraph: {
       type: "website",
       url: pageUrl,
-      title: "Tech Identity Card · dailydevmatch.dev",
-      description: "Developer Tech Identity from dailydevmatch.dev",
-      siteName: "dailydevmatch.dev",
+      title: `${title} · ${SITE_NAME}`,
+      description,
+      siteName: SITE_NAME,
       images: [
         {
           url: socialImage,
@@ -47,13 +43,14 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: "Tech Identity Card · dailydevmatch.dev",
-      description: "My developer Tech Identity from dailydevmatch.dev",
+      title: `${title} · ${SITE_NAME}`,
+      description,
       images: {
         url: socialImage,
         alt: "Tech Identity Card",
       },
     },
+    robots: { index: true, follow: true },
   };
 }
 
