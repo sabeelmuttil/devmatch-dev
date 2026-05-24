@@ -2,12 +2,7 @@
 
 import { Avatar } from "@/components/Avatar";
 import { ShareCard } from "@/components/ShareCard";
-import { proxiedAvatarUrl } from "@/lib/avatar";
-import { useClientOrigin } from "@/lib/use-client-origin";
 import * as React from "react";
-
-const DEFAULT_APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://dailydevmatch.dev";
 
 export interface MatchProfile {
   id: string;
@@ -375,13 +370,6 @@ export function ResultsView({
   const dnaEntries = Object.entries(techPersonality.techDna).sort(
     ([, a], [, b]) => b - a,
   );
-  const origin = useClientOrigin(DEFAULT_APP_URL);
-  const profileAvatar = proxiedAvatarUrl(
-    origin,
-    profile.image,
-    profile.username ?? profile.name ?? "dev",
-  );
-
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
@@ -391,7 +379,7 @@ export function ResultsView({
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar
-              src={profileAvatar}
+              src={profile.image}
               name={profile.name ?? profile.username ?? "Developer"}
               username={profile.username}
               size={56}

@@ -19,14 +19,29 @@ function canProxyImageUrl(raw: string): boolean {
   }
 }
 
+/** If `src` is already `/api/image-proxy?url=...`, return the inner target URL. */
+function unwrapProxiedAvatarUrl(raw: string): string | null {
+  try {
+    const url = new URL(raw);
+    if (!url.pathname.endsWith("/api/image-proxy")) return null;
+    const inner = url.searchParams.get("url");
+    return inner ? decodeURIComponent(inner) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function resolveAvatarUrl(
   image: string | null | undefined,
   seed: string,
 ): string {
   const trimmed = image?.trim();
   if (trimmed) {
+    const unwrapped = unwrapProxiedAvatarUrl(trimmed);
+    const candidate = unwrapped ?? trimmed;
     try {
-      if (canProxyImageUrl(trimmed)) return trimmed;
+      const url = new URL(candidate);
+      if (url.protocol === "https:") return candidate;
     } catch {
       /* fall through to generated avatar */
     }
@@ -34,12 +49,13 @@ export function resolveAvatarUrl(
   return avatarFallbackUrl(seed);
 }
 
-/** Same-origin proxy so allowed avatars load without CORS issues. */
+/** Same-origin proxy for allowlisted hosts; direct HTTPS URL otherwise (img display). */
 export function proxiedAvatarUrl(
   origin: string,
   image: string | null | undefined,
   seed: string,
 ): string {
   const target = resolveAvatarUrl(image, seed);
+  if (!canProxyImageUrl(target)) return target;
   return `${origin.replace(/\/$/, "")}/api/image-proxy?url=${encodeURIComponent(target)}`;
 }

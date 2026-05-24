@@ -6,7 +6,6 @@ import {
   type ShareCardPayload,
   type TopMatchEntry,
 } from "@/lib/export-card-image";
-import { proxiedAvatarUrl } from "@/lib/avatar";
 import {
   publishShareCardImageCached,
   type PublishedShareUrls,
@@ -175,11 +174,6 @@ export function ShareCard({
     };
   }, [serverPayload, publishKey, clientOrigin]);
 
-  const displayAvatarSrc = useMemo(
-    () => proxiedAvatarUrl(clientOrigin, avatar, username ?? name),
-    [clientOrigin, avatar, username, name],
-  );
-
   const tweetInput = useMemo(
     () => ({
       name,
@@ -253,7 +247,7 @@ export function ShareCard({
             <div className="flex items-start gap-4">
               <div className="relative shrink-0 overflow-hidden rounded-2xl ring-2 ring-white/20">
                 <Avatar
-                  src={displayAvatarSrc}
+                  src={avatar}
                   name={name}
                   username={username}
                   size={72}

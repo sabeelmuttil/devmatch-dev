@@ -1,7 +1,11 @@
 "use client";
 
+import { avatarFallbackUrl, proxiedAvatarUrl } from "@/lib/avatar";
+import { useClientOrigin } from "@/lib/use-client-origin";
 import { useMemo, useState } from "react";
-import { avatarFallbackUrl, resolveAvatarUrl } from "@/lib/avatar";
+
+const DEFAULT_ORIGIN =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://dailydevmatch.dev";
 
 function initialsFrom(name: string): string {
   return (
@@ -94,8 +98,15 @@ export function Avatar({
   shape = "circle",
 }: AvatarProps) {
   const seed = username?.trim() || name.trim() || "developer";
-  const fallback = useMemo(() => avatarFallbackUrl(seed), [seed]);
-  const intendedSrc = useMemo(() => resolveAvatarUrl(src, seed), [src, seed]);
+  const origin = useClientOrigin(DEFAULT_ORIGIN);
+  const intendedSrc = useMemo(
+    () => proxiedAvatarUrl(origin, src, seed),
+    [origin, src, seed],
+  );
+  const fallback = useMemo(
+    () => proxiedAvatarUrl(origin, avatarFallbackUrl(seed), seed),
+    [origin, seed],
+  );
 
   return (
     <AvatarImage
