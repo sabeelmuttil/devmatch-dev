@@ -15,6 +15,8 @@ export interface EmbedBadgePanelProps {
   username: string;
   persona: string;
   appUrl: string;
+  techDna?: { label: string; value: number }[];
+  tags?: string[];
   /** Tighter layout for results page — codes in a row on large screens. */
   compact?: boolean;
 }
@@ -31,7 +33,7 @@ function CodeBlock({
   copied: boolean;
 }) {
   return (
-    <div className="flex h-full min-h-[9.5rem] flex-col rounded-xl border border-white/10 bg-black/50">
+    <div className="glass-card flex h-full min-h-[9.5rem] flex-col rounded-xl">
       <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
           {label}
@@ -55,6 +57,8 @@ export function EmbedBadgePanel({
   username,
   persona,
   appUrl,
+  techDna = [],
+  tags = [],
   compact = false,
 }: EmbedBadgePanelProps) {
   const [copied, setCopied] = useState<SnippetKind | null>(null);
@@ -64,9 +68,12 @@ export function EmbedBadgePanel({
     () => ({
       iframe: buildIframeSnippet(appUrl, username),
       script: buildScriptSnippet(appUrl, username),
-      readme: buildReadmeSnippet(appUrl, username, persona),
+      readme: buildReadmeSnippet(appUrl, username, persona, {
+        techDna: techDna.slice(0, 3),
+        tags: tags.filter(Boolean).slice(0, 3),
+      }),
     }),
-    [appUrl, username, persona],
+    [appUrl, username, persona, techDna, tags],
   );
 
   const previewSrc = embedPageUrl(appUrl, username);
@@ -83,7 +90,7 @@ export function EmbedBadgePanel({
   );
 
   return (
-    <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 p-5 backdrop-blur-sm sm:p-6">
+    <div className="glass-panel rounded-2xl p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">

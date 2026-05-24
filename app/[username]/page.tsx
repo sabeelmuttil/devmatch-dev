@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AmbientBackground,
   LoadingView,
   ResultsView,
   type MatchResult,
@@ -98,7 +99,8 @@ export default function UserResultsPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-4">
-      <div className="glow-border max-w-md rounded-2xl bg-[#0f0f16]/90 p-8 text-center backdrop-blur-sm">
+      <AmbientBackground />
+      <div className="glass-panel animate-fade-up relative z-10 max-w-md rounded-2xl p-8 text-center">
         <p className="text-lg font-semibold text-white">Could not load match</p>
         <p className="mt-2 text-sm text-zinc-400">
           {error ?? "Unknown error"}

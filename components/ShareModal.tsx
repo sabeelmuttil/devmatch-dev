@@ -523,7 +523,7 @@ export function ShareModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-modal-title"
-        className="pointer-events-auto relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-violet-500/20 bg-[#0a0a12] shadow-2xl shadow-violet-950/50"
+        className="glass-panel pointer-events-auto relative z-10 w-full max-w-md overflow-hidden rounded-2xl border-violet-500/25 shadow-2xl shadow-violet-950/60"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-violet-600/25 to-transparent" />
 
@@ -554,7 +554,7 @@ export function ShareModal({
         </div>
 
         <div className="relative max-h-[min(70vh,520px)] overflow-y-auto px-5 pb-5">
-          <div className="rounded-xl border border-white/10 bg-black/40 p-3.5">
+          <div className="glass-card rounded-xl p-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
               Share preview
             </p>

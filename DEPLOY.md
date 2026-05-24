@@ -94,7 +94,7 @@ After deploy, users can embed their Tech Identity:
 - Live badge: `https://YOUR_DOMAIN/embed/USERNAME`
 - Script: `<script src="https://YOUR_DOMAIN/embed.js" data-username="USERNAME" async></script>`
 - Copy snippets from the results page (**Embed on your site**)
-- **GitHub README** uses a PNG badge (`/api/readme-badge/USERNAME`) — iframes/scripts are blocked by GitHub
+- **GitHub README** uses a PNG card (`/api/readme-badge/USERNAME`) matching the embed design — copy from results page to include DNA + tags
 - **embed.js** — put a container div **before** the script (see copy snippet on results page). Do not use `async`.
 
 ## Verify

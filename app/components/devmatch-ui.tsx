@@ -69,13 +69,17 @@ const CODE_SNIPPETS = [
   "export type DevMatch = { dna: TechDNA; vibe: string };",
 ];
 
-function AmbientBackground() {
+export function AmbientBackground() {
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden">
-      <div className="grid-bg absolute inset-0 opacity-60" />
-      <div className="absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-violet-600/20 blur-[120px]" />
-      <div className="absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-cyan-500/15 blur-[100px]" />
-      <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-fuchsia-600/10 blur-[100px]" />
+    <div className="ambient-root pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      <div className="ambient-grid" />
+      <div className="ambient-aurora" />
+      <div className="ambient-blob ambient-blob--violet" />
+      <div className="ambient-blob ambient-blob--cyan" />
+      <div className="ambient-blob ambient-blob--pink" />
+      <div className="ambient-scanline" />
+      <div className="ambient-noise" />
+      <div className="ambient-vignette" />
     </div>
   );
 }
@@ -86,16 +90,16 @@ function dailyDevProfileUrl(username: string): string {
 
 function SiteHeader() {
   return (
-    <header className="relative z-10 flex items-center justify-between px-4 py-5 sm:px-8">
+    <header className="glass-header relative z-10 flex items-center justify-between px-4 py-4 sm:px-8">
       <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 font-mono text-sm font-bold text-white shadow-lg shadow-violet-500/30">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 font-mono text-sm font-bold text-white shadow-lg shadow-violet-500/40 ring-1 ring-white/20">
           DD
         </div>
         <span className="font-semibold tracking-tight text-white">
           dailydevmatch<span className="text-cyan-400">.dev</span>
         </span>
       </div>
-      <span className="hidden rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300 sm:inline-block">
+      <span className="glass-chip hidden rounded-full px-3 py-1 text-xs font-medium text-violet-200 sm:inline-block">
         daily.dev Hackathon
       </span>
     </header>
@@ -119,8 +123,8 @@ export function LandingView({
       <SiteHeader />
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-8 sm:px-8">
-        <div className="mx-auto w-full max-w-2xl text-center">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-1.5 text-xs font-medium text-cyan-300">
+        <div className="animate-fade-up mx-auto w-full max-w-2xl text-center">
+          <p className="glass-chip mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-cyan-300">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
@@ -150,7 +154,7 @@ export function LandingView({
             <label htmlFor="username" className="sr-only">
               daily.dev username
             </label>
-            <div className="glow-border group flex items-center overflow-hidden rounded-2xl bg-[#0f0f16]/90 backdrop-blur-sm transition-all focus-within:shadow-[0_0_32px_-4px_rgba(139,92,246,0.6)]">
+            <div className="glass-panel group flex items-center overflow-hidden rounded-2xl transition-all focus-within:shadow-[0_0_40px_-6px_rgba(139,92,246,0.55)]">
               <span className="pl-5 font-mono text-zinc-500">@</span>
               <input
                 id="username"
@@ -206,7 +210,7 @@ export function LandingView({
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-5 text-center backdrop-blur-sm"
+              className="glass-card rounded-xl px-4 py-5 text-center transition hover:border-violet-500/25 hover:bg-white/[0.04]"
             >
               <p className="font-medium text-violet-300">{item.label}</p>
               <p className="mt-1 text-sm text-zinc-500">{item.desc}</p>
@@ -241,7 +245,7 @@ export function LoadingView({
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-8">
         <div className="mx-auto w-full max-w-2xl">
-          <div className="glow-border overflow-hidden rounded-2xl bg-[#0f0f16]/80 backdrop-blur-md">
+          <div className="glass-panel overflow-hidden rounded-2xl">
             <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
               <span className="h-3 w-3 rounded-full bg-red-500/80" />
               <span className="h-3 w-3 rounded-full bg-amber-500/80" />
@@ -278,7 +282,7 @@ export function LoadingView({
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="animate-pulse-glow rounded-xl border border-white/5 bg-[#14141f]/80 p-5"
+                className="glass-card animate-pulse-glow rounded-xl p-5"
                 style={{ animationDelay: `${i * 0.3}s` }}
               >
                 <div className="mx-auto h-14 w-14 rounded-full bg-gradient-to-br from-violet-600/40 to-cyan-500/40" />
@@ -344,7 +348,7 @@ function DnaBar({
         <span className="text-zinc-300">{label}</span>
         <span className="font-mono font-medium text-cyan-400">{value}%</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800/80">
+      <div className="h-2.5 overflow-hidden rounded-full border border-white/5 bg-zinc-900/50 backdrop-blur-sm">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${colorClass} animate-bar-grow shadow-sm`}
           style={{
@@ -384,7 +388,7 @@ export function ResultsView({
       <SiteHeader />
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-4 sm:px-8">
-        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="animate-fade-up glass-panel mb-5 flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar
               src={profile.image}
@@ -405,7 +409,7 @@ export function ResultsView({
           <button
             type="button"
             onClick={onReset}
-            className="self-start rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-violet-500/40 hover:text-white sm:self-center"
+            className="glass-chip self-start rounded-xl px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-violet-500/40 hover:text-white sm:self-center"
           >
             New search
           </button>
@@ -413,7 +417,7 @@ export function ResultsView({
 
         <div className="grid items-start gap-4 lg:grid-cols-12">
           <div className="flex flex-col gap-4 lg:col-span-5">
-            <div className="glow-border-cyan rounded-2xl bg-gradient-to-br from-violet-950/80 via-[#0f0f16] to-cyan-950/40 p-4 sm:p-5">
+            <div className="glass-panel glass-panel--cyan rounded-2xl bg-gradient-to-br from-violet-950/40 via-transparent to-cyan-950/30 p-4 sm:p-5">
               <p className="text-xs font-medium uppercase tracking-wider text-cyan-400/80">
                 Developer Persona
               </p>
@@ -426,7 +430,7 @@ export function ResultsView({
               )}
               <div className="mt-3">
                 <div className="relative inline-block">
-                  <div className="relative rounded-xl border border-violet-400/40 bg-gradient-to-br from-violet-600/30 to-cyan-500/20 px-4 py-2.5">
+                  <div className="glass-chip relative rounded-xl border border-violet-400/40 bg-gradient-to-br from-violet-600/25 to-cyan-500/15 px-4 py-2.5 shadow-lg shadow-violet-500/10">
                     <span className="text-lg font-bold text-gradient sm:text-xl">
                       {techPersonality.title}
                     </span>
@@ -498,7 +502,7 @@ export function ResultsView({
             </div>
 
             {perfectMatches[0] && (
-              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5">
+              <div className="glass-panel rounded-xl border-violet-500/25 p-3.5">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
                   Top match
                 </p>
@@ -534,7 +538,7 @@ export function ResultsView({
             )}
 
             {perfectMatches.length > 1 && (
-              <div className="rounded-xl border border-white/5 bg-[#0f0f16]/80 p-3.5">
+              <div className="glass-card rounded-xl p-3.5">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
                   Compatible developers
                 </p>
@@ -545,7 +549,7 @@ export function ResultsView({
                       href={dailyDevProfileUrl(match.username)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex min-w-0 flex-col items-center rounded-xl border border-white/10 bg-black/30 px-2 py-3 text-center transition hover:border-violet-500/40 hover:bg-violet-500/5"
+                      className="glass-tile group flex min-w-0 flex-col items-center rounded-xl px-2 py-3 text-center"
                     >
                       <Avatar
                         src={match.avatar}
@@ -580,7 +584,7 @@ export function ResultsView({
           </div>
 
           <div className="lg:col-span-7 lg:sticky lg:top-4 lg:self-start">
-            <div className="rounded-2xl border border-white/5 bg-[#0f0f16]/60 px-4 py-4 backdrop-blur-sm sm:px-5">
+            <div className="glass-panel rounded-2xl px-4 py-4 sm:px-5">
               <p className="mb-3 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Share your Tech Identity
               </p>
@@ -631,6 +635,8 @@ export function ResultsView({
               username={embedUsername}
               persona={techPersonality.title}
               appUrl={appOrigin}
+              techDna={dnaEntries.map(([label, value]) => ({ label, value }))}
+              tags={tags}
             />
           </div>
         ) : null}
